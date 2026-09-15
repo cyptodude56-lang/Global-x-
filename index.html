@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Global Wallet — Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap"
+  rel="stylesheet"
+/>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <div class="sandbox-banner">Demo / sandbox — no real money, accounts, or cards are involved.</div>
+
+  <!-- LOGIN / ACCOUNT SWITCHER -->
+  <main id="screen-login" class="screen screen-login">
+    <div class="login-card">
+      <p class="wordmark">Global Wallet</p>
+      <p class="login-sub">Pick a demo account to explore the prototype.</p>
+      <div id="account-list" class="account-list"></div>
+    </div>
+  </main>
+
+  <!-- DASHBOARD -->
+  <main id="screen-dashboard" class="screen screen-dashboard" hidden>
+    <header class="topbar">
+      <div class="topbar-user">
+        <span id="user-avatar" class="avatar"></span>
+        <div>
+          <p id="user-name" class="user-name"></p>
+          <p id="user-loc" class="user-loc"></p>
+        </div>
+      </div>
+      <button id="btn-switch" class="link-btn" type="button">Switch account</button>
+    </header>
+
+    <section class="balance-panel">
+      <p class="balance-label">Total balance</p>
+      <p id="total-balance" class="balance-amount"></p>
+      <div id="currency-chips" class="currency-chips"></div>
+    </section>
+
+    <nav class="quick-actions">
+      <button class="action-btn" data-action="add" type="button">Add money</button>
+      <button class="action-btn" data-action="send" type="button">Send</button>
+      <button class="action-btn" data-action="exchange" type="button">Exchange</button>
+      <button class="action-btn" data-action="withdraw" type="button">Withdraw</button>
+    </nav>
+
+    <div class="dashboard-grid">
+      <section class="card-panel">
+        <p class="panel-title">Virtual card</p>
+        <div id="virtual-card" class="virtual-card"></div>
+        <button id="btn-freeze" class="ghost-btn" type="button"></button>
+      </section>
+
+      <section class="ledger-panel">
+        <p class="panel-title">Transaction ledger</p>
+        <div id="ledger-list" class="ledger-list"></div>
+      </section>
+    </div>
+  </main>
+
+  <!-- MODAL -->
+  <div id="modal-backdrop" class="modal-backdrop" hidden>
+    <div id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <button id="modal-close" class="modal-close" type="button" aria-label="Close dialog">&times;</button>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
