@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Global Wallet — Prototype</title>
+<title>Hallmark Financial Bank — Prototype</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link
@@ -19,9 +19,11 @@
   <!-- LOGIN / ACCOUNT SWITCHER -->
   <main id="screen-login" class="screen screen-login">
     <div class="login-card">
-      <p class="wordmark">Global Wallet</p>
+      <p class="wordmark">Hallmark</p>
       <p class="login-sub">Pick a demo account to explore the prototype.</p>
-      <div id="account-list" class="account-list"></div>
+      <div id="account-list" class="account-list">
+        <p class="loading-text">Loading demo accounts…</p>
+      </div>
     </div>
   </main>
 
@@ -39,7 +41,7 @@
     </header>
 
     <section class="balance-panel">
-      <p class="balance-label">Total balance</p>
+      <p class="balance-label">Total across accounts</p>
       <p id="total-balance" class="balance-amount"></p>
       <div id="currency-chips" class="currency-chips"></div>
     </section>
@@ -47,13 +49,14 @@
     <nav class="quick-actions">
       <button class="action-btn" data-action="add" type="button">Add money</button>
       <button class="action-btn" data-action="send" type="button">Send</button>
-      <button class="action-btn" data-action="exchange" type="button">Exchange</button>
+      <button class="action-btn" data-action="transfer" type="button">Transfer</button>
       <button class="action-btn" data-action="withdraw" type="button">Withdraw</button>
     </nav>
 
     <div class="dashboard-grid">
       <section class="card-panel">
-        <p class="panel-title">Virtual card</p>
+        <p class="panel-title">Card</p>
+        <div id="card-tabs" class="card-tabs"></div>
         <div id="virtual-card" class="virtual-card"></div>
         <button id="btn-freeze" class="ghost-btn" type="button"></button>
       </section>
@@ -73,6 +76,8 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

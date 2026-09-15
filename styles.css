@@ -78,6 +78,27 @@ button, input, select {
   font-size: 0.95rem;
 }
 
+.loading-text, .error-text {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.error-box {
+  border: 1px solid var(--danger);
+  background: #FBF0EC;
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: 0.85rem;
+  color: var(--ink);
+}
+.error-box code {
+  font-family: var(--font-mono);
+  background: var(--surface);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
 .account-list {
   display: flex;
   flex-direction: column;
@@ -106,8 +127,18 @@ button, input, select {
 
 .account-tile .avatar { flex-shrink: 0; }
 
-.account-name { font-weight: 600; margin: 0; }
+.account-name { font-weight: 600; margin: 0; display: flex; align-items: center; gap: 8px; }
 .account-meta { color: var(--muted); margin: 2px 0 0; font-size: 0.85rem; }
+
+.tier-badge {
+  font-size: 0.68rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-weight: 500;
+}
 
 /* ---------- Avatar ---------- */
 
@@ -203,6 +234,11 @@ button, input, select {
   transition: background 0.15s ease, color 0.15s ease;
 }
 .action-btn:hover { background: var(--ink); color: var(--paper); }
+.action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.action-btn:disabled:hover { background: var(--surface); color: var(--ink); }
 
 .dashboard-grid {
   display: grid;
@@ -221,9 +257,29 @@ button, input, select {
   font-size: 0.95rem;
 }
 
-/* ---------- Virtual card ---------- */
+/* ---------- Card panel ---------- */
 
 .card-panel { display: flex; flex-direction: column; gap: 14px; }
+
+.card-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.card-tab {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 999px;
+  padding: 5px 14px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  color: var(--muted);
+}
+.card-tab.active {
+  border-color: var(--ink);
+  color: var(--ink);
+  font-weight: 600;
+}
 
 .virtual-card {
   width: 100%;
@@ -251,8 +307,8 @@ button, input, select {
 
 .card-number {
   font-family: var(--font-mono);
-  font-size: 1.15rem;
-  letter-spacing: 2px;
+  font-size: 1.1rem;
+  letter-spacing: 1.5px;
 }
 
 .card-bottom { display: flex; justify-content: space-between; font-size: 0.8rem; align-items: flex-end; }
@@ -298,6 +354,12 @@ button, input, select {
 
 .tx-date { color: var(--muted); font-size: 0.82rem; }
 .tx-desc { font-size: 0.95rem; }
+.tx-desc .tx-account {
+  display: block;
+  color: var(--muted);
+  font-size: 0.78rem;
+  margin-top: 1px;
+}
 
 .tx-amount {
   font-family: var(--font-mono);
@@ -399,6 +461,7 @@ button, input, select {
   margin-top: 6px;
 }
 .submit-btn:hover { background: var(--accent-dark); }
+.submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .helper-text {
   font-size: 0.8rem;
