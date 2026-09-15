@@ -11,19 +11,37 @@
   rel="stylesheet"
 />
 <link rel="stylesheet" href="styles.css" />
+
+<link rel="icon" type="image/svg+xml" href="favicon.svg" />
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png" />
+<link rel="shortcut icon" href="favicon.ico" />
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+<link rel="manifest" href="site.webmanifest" />
+<meta name="theme-color" content="#1B2430" />
 </head>
 <body>
 
   <div class="sandbox-banner">Demo / sandbox — no real money, accounts, or cards are involved.</div>
 
-  <!-- LOGIN / ACCOUNT SWITCHER -->
+  <!-- LOGIN -->
   <main id="screen-login" class="screen screen-login">
     <div class="login-card">
       <p class="wordmark">Hallmark</p>
-      <p class="login-sub">Pick a demo account to explore the prototype.</p>
-      <div id="account-list" class="account-list">
-        <p class="loading-text">Loading demo accounts…</p>
-      </div>
+      <p class="login-sub">Log in to view your demo account.</p>
+
+      <form id="login-form">
+        <div class="field"><label for="login-id">Email or username</label>
+          <input id="login-id" type="text" autocomplete="username" required />
+        </div>
+        <div class="field"><label for="login-password">Password</label>
+          <input id="login-password" type="password" autocomplete="current-password" required />
+        </div>
+        <p class="form-error" id="login-error" hidden></p>
+        <button class="submit-btn" type="submit" id="login-submit">Log in</button>
+      </form>
+
+      <div id="login-status" class="login-status"></div>
     </div>
   </main>
 
@@ -37,7 +55,7 @@
           <p id="user-loc" class="user-loc"></p>
         </div>
       </div>
-      <button id="btn-switch" class="link-btn" type="button">Switch account</button>
+      <button id="btn-logout" class="link-btn" type="button">Log out</button>
     </header>
 
     <section class="balance-panel">
@@ -58,7 +76,10 @@
         <p class="panel-title">Card</p>
         <div id="card-tabs" class="card-tabs"></div>
         <div id="virtual-card" class="virtual-card"></div>
-        <button id="btn-freeze" class="ghost-btn" type="button"></button>
+        <div class="card-actions">
+          <button id="btn-reveal" class="ghost-btn" type="button"></button>
+          <button id="btn-freeze" class="ghost-btn" type="button"></button>
+        </div>
       </section>
 
       <section class="ledger-panel">

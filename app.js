@@ -1,16 +1,25 @@
 // ---------------------------------------------------------------------------
-// Hallmark — client-only demo, now backed by a real Supabase database.
+// Hallmark — client-only demo, backed by a real Supabase database.
 //
-// Reads (users, profiles, wallets, cards, beneficiaries, ledger_transactions)
-// come straight from Supabase. Interactive actions (Add money / Send /
-// Transfer / Withdraw) still only mutate an in-memory copy for the current
-// browser session — they are NOT written back to Supabase. See README.md
-// for why that's the deliberate choice for now, and how to change it once
-// real login/auth exists.
+// Reads (users, profiles, wallets, cards, beneficiaries, ledger_transactions,
+// logins) come straight from Supabase. Login checks the entered email/
+// username + password against the `logins` table you loaded from
+// hallmark_logins.xlsx — see README.md for why that table needs to stay
+// read-only-by-anon and what a real auth upgrade later would look like.
+//
+// Interactive actions (Add money / Send / Transfer / Withdraw) still only
+// mutate an in-memory copy for the current browser session — they are NOT
+// written back to Supabase. See README.md for why, and how to change it.
 // ---------------------------------------------------------------------------
 
 const FLAGS = { USA: "🇺🇸", UK: "🇬🇧", Germany: "🇩🇪" };
 const AVATAR_COLORS = ["#1F6F5C", "#2451B0", "#C98A3B", "#8B3A62", "#3A6B8A", "#6B7A2E", "#7A3A3A"];
+
+// Card numbers were added to the `cards` table separately from the seed
+// data, under a column name we don't know for certain — we check the most
+// likely names, in order, and use whichever is actually present. If your
+// column is named something else, add it to this list.
+const PAN_FIELD_CANDIDATES = ["full_pan", "card_number", "pan", "unmasked_pan", "card_number_full", "number"];
 
 const sb =
   window.HALLMARK_SUPABASE_URL && !window.HALLMARK_SUPABASE_URL.includes("YOUR-PROJECT")
@@ -19,11 +28,32 @@ const sb =
 
 let ACCOUNTS = {};
 let ORDER = [];
+let LOGINS = [];
 let txCounter = 0;
 
 const state = { currentUserId: null, highlightIds: [] };
 
 const el = (id) => document.getElementById(id);
+
+function detectFullPan(row) {
+  for (const key of PAN_FIELD_CANDIDATES) {
+    if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== "") {
+      return String(row[key]);
+    }
+  }
+  return null;
+}
+
+function lastFour(masked) {
+  const match = String(masked || "").match(/(\d{4})\s*$/);
+  return match ? match[1] : "????";
+}
+
+function formatPan(raw) {
+  const digits = String(raw).replace(/\D/g, "");
+  if (digits.length < 12) return raw;
+  return digits.replace(/(.{4})/g, "$1 ").trim();
+}
 
 function capitalize(s) {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
@@ -63,26 +93,31 @@ function tx({ label, counterparty, amount, currency, sign, date, walletLabel, st
 
 async function loadData() {
   if (!sb) {
-    showLoginError(
-      `Supabase isn't configured yet. Open <code>supabase-config.js</code> and fill in your project URL and anon key — see README.md for where to find them.`
+    showLoginStatus(
+      `<div class="error-box">Supabase isn't configured yet. Open <code>supabase-config.js</code> and fill in your project URL and anon key — see README.md for where to find them.</div>`
     );
     return;
   }
 
-  const tables = ["users", "profiles", "wallets", "cards", "beneficiaries", "ledger_transactions"];
+  showLoginStatus(`<p class="loading-text">Loading demo data…</p>`);
+  el("login-submit").disabled = true;
+
+  const tables = ["users", "profiles", "wallets", "cards", "beneficiaries", "ledger_transactions", "logins"];
   const results = await Promise.all(tables.map((t) => sb.from(t).select("*").eq("environment", "sandbox")));
 
   const failed = results.find((r) => r.error);
   if (failed) {
-    showLoginError(
-      `Couldn't load demo data (${failed.error.message}). Make sure you've run <code>schema.sql</code> and then <code>seed.sql</code> in your Supabase project's SQL editor — see README.md.`
+    showLoginStatus(
+      `<div class="error-box">Couldn't load demo data (${failed.error.message}). Make sure you've run <code>schema.sql</code> and then <code>seed.sql</code> in your Supabase project's SQL editor, and that you've loaded a <code>logins</code> table matching <code>hallmark_logins.xlsx</code> — see README.md.</div>`
     );
     return;
   }
 
-  const [usersRes, profilesRes, walletsRes, cardsRes, beneficiariesRes, txRes] = results;
+  const [usersRes, profilesRes, walletsRes, cardsRes, beneficiariesRes, txRes, loginsRes] = results;
   assemble(usersRes.data, profilesRes.data, walletsRes.data, cardsRes.data, beneficiariesRes.data, txRes.data);
-  renderAccountList();
+  LOGINS = loginsRes.data;
+  showLoginStatus("");
+  el("login-submit").disabled = false;
 }
 
 function assemble(users, profiles, wallets, cards, beneficiaries, txs) {
@@ -125,10 +160,12 @@ function assemble(users, profiles, wallets, cards, beneficiaries, txs) {
       id: c.id,
       type: c.card_type,
       maskedPan: c.masked_pan,
+      fullPan: detectFullPan(c),
       expiry: c.expiry,
       holder: c.card_holder_name,
       isVirtual: !!c.is_virtual,
       frozen: c.status !== "active",
+      revealed: false,
     });
   });
   Object.values(ACCOUNTS).forEach((acc) => acc.cards.sort((a, b) => Number(a.isVirtual) - Number(b.isVirtual)));
@@ -172,28 +209,33 @@ function walletCurrency(acc) {
   return w ? w.currency : "";
 }
 
-function showLoginError(html) {
-  el("account-list").innerHTML = `<div class="error-box">${html}</div>`;
+function showLoginStatus(html) {
+  el("login-status").innerHTML = html;
 }
 
-function renderAccountList() {
-  const list = el("account-list");
-  list.innerHTML = "";
-  ORDER.forEach((id) => {
-    const acc = ACCOUNTS[id];
-    const btn = document.createElement("button");
-    btn.className = "account-tile";
-    btn.type = "button";
-    btn.innerHTML = `
-      <span class="avatar" style="background:${acc.avatarColor}">${initials(acc)}</span>
-      <span>
-        <p class="account-name">${acc.firstName} ${acc.lastName}<span class="tier-badge">${acc.tier}</span></p>
-        <p class="account-meta">${FLAGS[acc.country] || ""} ${acc.country} · ${walletCurrency(acc)} account</p>
-      </span>
-    `;
-    btn.addEventListener("click", () => selectAccount(id));
-    list.appendChild(btn);
-  });
+function showLoginFormError(msg) {
+  const e = el("login-error");
+  e.textContent = msg;
+  e.hidden = false;
+}
+
+function hideLoginFormError() {
+  const e = el("login-error");
+  e.hidden = true;
+  e.textContent = "";
+}
+
+// Checks the entered identifier (email or username) + password against the
+// `logins` table loaded from hallmark_logins.xlsx. This is a plain
+// client-side match against plaintext demo passwords — fine for a sandbox
+// with fake people, but see README.md before this pattern goes anywhere
+// near real credentials.
+function attemptLogin(identifier, password) {
+  const id = identifier.trim().toLowerCase();
+  return (
+    LOGINS.find((l) => (l.email.toLowerCase() === id || l.username.toLowerCase() === id) && l.password === password) ||
+    null
+  );
 }
 
 function selectAccount(id) {
@@ -203,10 +245,15 @@ function selectAccount(id) {
   renderDashboard();
 }
 
-function switchAccount() {
+function logout() {
+  const acc = currentUser();
+  if (acc) acc.cards.forEach((c) => (c.revealed = false));
   state.currentUserId = null;
   el("screen-dashboard").hidden = true;
   el("screen-login").hidden = false;
+  el("login-id").value = "";
+  el("login-password").value = "";
+  hideLoginFormError();
 }
 
 function currentUser() {
@@ -270,16 +317,23 @@ function renderCard(acc) {
   if (!c) {
     cardEl.innerHTML = "";
     el("btn-freeze").hidden = true;
+    el("btn-reveal").hidden = true;
     return;
   }
   el("btn-freeze").hidden = false;
+  el("btn-reveal").hidden = false;
+
+  const hiddenDisplay = `•••• •••• •••• ${lastFour(c.maskedPan)}`;
+  const shownDisplay = c.fullPan ? formatPan(c.fullPan) : c.maskedPan;
+  const numberToShow = c.revealed ? shownDisplay : hiddenDisplay;
+
   cardEl.className = "virtual-card" + (c.frozen ? " frozen" : "");
   cardEl.innerHTML = `
     <div class="card-top">
       <span class="card-brand">Hallmark</span>
       <span class="card-chip"></span>
     </div>
-    <div class="card-number">${c.maskedPan}</div>
+    <div class="card-number">${numberToShow}</div>
     <div class="card-bottom">
       <span class="card-name">${c.holder}</span>
       <span class="card-expiry">${c.expiry}</span>
@@ -287,6 +341,14 @@ function renderCard(acc) {
     ${c.frozen ? '<span class="frozen-tag">Frozen</span>' : ""}
   `;
   el("btn-freeze").textContent = c.frozen ? "Unfreeze card" : "Freeze card";
+
+  if (!c.fullPan) {
+    el("btn-reveal").disabled = true;
+    el("btn-reveal").textContent = "Full number not loaded";
+  } else {
+    el("btn-reveal").disabled = false;
+    el("btn-reveal").textContent = c.revealed ? "Hide details" : "Show details";
+  }
 }
 
 function renderLedger(acc) {
@@ -544,7 +606,7 @@ function wireForm(kind) {
 // ---------------------------------------------------------------------------
 
 function init() {
-  el("btn-switch").addEventListener("click", switchAccount);
+  el("btn-logout").addEventListener("click", logout);
   el("modal-close").addEventListener("click", closeModal);
   el("modal-backdrop").addEventListener("click", (e) => {
     if (e.target === el("modal-backdrop")) closeModal();
@@ -566,6 +628,38 @@ function init() {
     if (!c) return;
     c.frozen = !c.frozen;
     renderCard(acc);
+  });
+
+  el("btn-reveal").addEventListener("click", () => {
+    const acc = currentUser();
+    const c = acc.cards[acc.activeCardIndex];
+    if (!c || !c.fullPan) return;
+    c.revealed = !c.revealed;
+    renderCard(acc);
+  });
+
+  el("login-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    hideLoginFormError();
+
+    if (!sb || LOGINS.length === 0) {
+      showLoginFormError("Demo data hasn't finished loading yet — try again in a moment.");
+      return;
+    }
+
+    const match = attemptLogin(el("login-id").value, el("login-password").value);
+    if (!match) {
+      showLoginFormError("Incorrect email/username or password.");
+      return;
+    }
+    const acc = ACCOUNTS[match.user_id];
+    if (!acc) {
+      showLoginFormError("This login isn't linked to a customer dashboard in this demo.");
+      return;
+    }
+    el("login-id").value = "";
+    el("login-password").value = "";
+    selectAccount(acc.id);
   });
 
   loadData();
