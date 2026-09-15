@@ -29,6 +29,7 @@ const sb =
 let ACCOUNTS = {};
 let ORDER = [];
 let LOGINS = [];
+let dataReady = false;
 let txCounter = 0;
 
 const state = { currentUserId: null, highlightIds: [] };
@@ -96,6 +97,7 @@ async function loadData() {
     showLoginStatus(
       `<div class="error-box">Supabase isn't configured yet. Open <code>supabase-config.js</code> and fill in your project URL and anon key — see README.md for where to find them.</div>`
     );
+    el("login-submit").disabled = true;
     return;
   }
 
@@ -116,6 +118,25 @@ async function loadData() {
   const [usersRes, profilesRes, walletsRes, cardsRes, beneficiariesRes, txRes, loginsRes] = results;
   assemble(usersRes.data, profilesRes.data, walletsRes.data, cardsRes.data, beneficiariesRes.data, txRes.data);
   LOGINS = loginsRes.data;
+  dataReady = true;
+
+  console.info("Hallmark demo data loaded:", {
+    customers: ORDER.length,
+    logins: LOGINS.length,
+    cards: Object.values(ACCOUNTS).reduce((n, a) => n + a.cards.length, 0),
+  });
+
+  if (LOGINS.length === 0) {
+    // The query succeeded (no error) but came back with zero rows. This is
+    // almost always one of: the `logins` table is empty, its `environment`
+    // column doesn't say exactly 'sandbox', or Row Level Security is
+    // enabled on it without a policy that allows reads — see README.md.
+    showLoginStatus(
+      `<div class="error-box">Connected to Supabase, but the <code>logins</code> table returned 0 rows for <code>environment = 'sandbox'</code>. Check that the table has data, that column really says "sandbox", and that its Row Level Security policy allows public reads — see "Logging in" in README.md, or run <code>logins_rls.sql</code>.</div>`
+    );
+    return;
+  }
+
   showLoginStatus("");
   el("login-submit").disabled = false;
 }
@@ -642,8 +663,16 @@ function init() {
     e.preventDefault();
     hideLoginFormError();
 
-    if (!sb || LOGINS.length === 0) {
+    if (!sb) {
+      showLoginFormError("Supabase isn't configured yet — see README.md.");
+      return;
+    }
+    if (!dataReady) {
       showLoginFormError("Demo data hasn't finished loading yet — try again in a moment.");
+      return;
+    }
+    if (LOGINS.length === 0) {
+      showLoginFormError("No login rows are available — see the message above for why.");
       return;
     }
 
