@@ -335,6 +335,10 @@ button, input, select {
   z-index: 10;
 }
 
+.modal-backdrop[hidden] {
+  display: none;
+}
+
 .modal {
   width: 100%;
   max-width: 380px;
