@@ -156,9 +156,12 @@ el("verify-code-form").addEventListener("submit", async (e) => {
   btn.disabled = true;
   btn.textContent = "Verifying…";
 
+  const tokenValue = el("login-code").value.trim();
+  console.info("verifyOtp submitting:", { email: pendingEmail, token: tokenValue, tokenLength: tokenValue.length, at: new Date().toISOString() });
+
   const { data, error } = await sb.auth.verifyOtp({
     email: pendingEmail,
-    token: el("login-code").value.trim(),
+    token: tokenValue,
     type: "email",
   });
 
