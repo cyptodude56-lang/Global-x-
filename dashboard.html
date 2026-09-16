@@ -22,7 +22,11 @@
 </head>
 <body>
 
-  <div class="sandbox-banner">Demo / sandbox — no real money, accounts, or cards are involved.</div>
+  <div class="fx-ticker" id="fx-ticker">
+    <div class="fx-ticker-track" id="fx-ticker-track">
+      <span class="fx-ticker-item">Loading exchange rates…</span>
+    </div>
+  </div>
 
   <div class="app-shell">
     <aside class="sidebar">
@@ -173,6 +177,13 @@
                 </div>
               </div>
               <div id="spend-legend" class="spend-legend"></div>
+            </section>
+
+            <section class="side-panel">
+              <p class="side-panel-title">Live Exchange Rates</p>
+              <div id="fx-rates" class="fx-rates">
+                <p class="helper-text" id="fx-status">Loading rates…</p>
+              </div>
             </section>
 
             <section class="side-panel">

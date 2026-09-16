@@ -49,6 +49,35 @@ function formatMMSS(totalSeconds) {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+// ---- Running exchange-rate ticker (all 6 pairs, not tied to any one account) ----
+const TICKER_PAIRS = [
+  ["USD", "GBP"], ["USD", "EUR"], ["GBP", "EUR"],
+  ["GBP", "USD"], ["EUR", "USD"], ["EUR", "GBP"],
+];
+
+async function loadFxTicker() {
+  const track = document.getElementById("fx-ticker-track");
+  if (!track) return;
+  try {
+    const results = await Promise.all(
+      TICKER_PAIRS.map(([base, quote]) =>
+        fetch(`https://api.frankfurter.dev/v2/rate/${base.toLowerCase()}/${quote.toLowerCase()}`).then((r) => {
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          return r.json();
+        })
+      )
+    );
+    const itemsHtml = results
+      .map((r) => `<span class="fx-ticker-item"><strong>${r.base}/${r.quote}</strong>${Number(r.rate).toFixed(4)}</span>`)
+      .join("");
+    track.innerHTML = itemsHtml + itemsHtml; // duplicated back-to-back for a seamless loop
+  } catch (err) {
+    track.innerHTML = '<span class="fx-ticker-item">Exchange rates unavailable right now.</span>';
+    console.warn("FX ticker fetch failed:", err);
+  }
+}
+loadFxTicker();
+
 function stopCodeTimer() {
   if (timerHandle) clearInterval(timerHandle);
   timerHandle = null;
