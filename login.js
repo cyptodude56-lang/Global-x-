@@ -6,7 +6,16 @@
 // in — nobody can type a random email and create a new account here).
 // Step 2: enter the code, verify it (supabase.auth.verifyOtp). On success
 // Supabase's own session (not sessionStorage) is what dashboard.html reads.
+//
+// The 5-minute countdown below is a UI convenience, not the real security
+// boundary — the actual expiry is enforced server-side by Supabase's own
+// "Email OTP Expiration" setting (Authentication → Providers → Email),
+// which needs to be set to 300 seconds too so the two actually match. If
+// they drift out of sync, the server's setting is what actually governs;
+// this timer is just here so the person isn't guessing.
 // ---------------------------------------------------------------------------
+
+const CODE_EXPIRY_SECONDS = 300; // keep in sync with Supabase's Email OTP Expiration setting
 
 const sb =
   window.HALLMARK_SUPABASE_URL && !window.HALLMARK_SUPABASE_URL.includes("YOUR-PROJECT")
@@ -15,6 +24,8 @@ const sb =
 
 const el = (id) => document.getElementById(id);
 let pendingEmail = null;
+let timerHandle = null;
+let codeRequestedAt = null;
 
 function showStatus(html) {
   el("login-status").innerHTML = html;
@@ -30,6 +41,48 @@ function hideFormError() {
   const e = el("login-error");
   e.hidden = true;
   e.textContent = "";
+}
+
+function formatMMSS(totalSeconds) {
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+function stopCodeTimer() {
+  if (timerHandle) clearInterval(timerHandle);
+  timerHandle = null;
+  codeRequestedAt = null;
+  el("code-timer").textContent = "";
+}
+
+function expireCode() {
+  stopCodeTimer();
+  el("code-timer").textContent = "This code has expired.";
+  el("login-code").disabled = true;
+  el("verify-code-btn").disabled = true;
+  el("resend-code").hidden = false;
+}
+
+function startCodeTimer() {
+  stopCodeTimer();
+  el("login-code").disabled = false;
+  el("verify-code-btn").disabled = false;
+  el("resend-code").hidden = true;
+  codeRequestedAt = Date.now();
+
+  const tick = () => {
+    const elapsed = Math.floor((Date.now() - codeRequestedAt) / 1000);
+    const remaining = CODE_EXPIRY_SECONDS - elapsed;
+    if (remaining <= 0) {
+      expireCode();
+      return;
+    }
+    el("code-timer").textContent = `Code expires in ${formatMMSS(remaining)}`;
+  };
+
+  tick();
+  timerHandle = setInterval(tick, 1000);
 }
 
 async function init() {
@@ -50,16 +103,8 @@ async function init() {
   }
 }
 
-el("request-code-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
+async function requestCode(email) {
   hideFormError();
-
-  if (!sb) {
-    showFormError("Supabase isn't configured yet — see README.md.");
-    return;
-  }
-
-  const email = el("login-email").value.trim();
   const btn = el("request-code-btn");
   btn.disabled = true;
   btn.textContent = "Sending…";
@@ -75,14 +120,32 @@ el("request-code-form").addEventListener("submit", async (e) => {
   if (error) {
     console.error("signInWithOtp error:", error);
     showFormError(`Couldn't send a code: ${error.message} (status ${error.status ?? "unknown"})`);
-    return;
+    return false;
   }
 
   pendingEmail = email;
   el("request-code-form").hidden = true;
   el("verify-code-form").hidden = false;
   el("login-sub").textContent = `We sent a 6-digit code to ${email}. Enter it below.`;
+  el("login-code").value = "";
   el("login-code").focus();
+  startCodeTimer();
+  return true;
+}
+
+el("request-code-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!sb) {
+    showFormError("Supabase isn't configured yet — see README.md.");
+    return;
+  }
+  await requestCode(el("login-email").value.trim());
+});
+
+el("resend-code").addEventListener("click", async () => {
+  hideFormError();
+  el("resend-code").hidden = true;
+  await requestCode(pendingEmail);
 });
 
 el("verify-code-form").addEventListener("submit", async (e) => {
@@ -108,10 +171,12 @@ el("verify-code-form").addEventListener("submit", async (e) => {
     return;
   }
 
+  stopCodeTimer();
   window.location.href = "dashboard.html";
 });
 
 el("back-to-email").addEventListener("click", () => {
+  stopCodeTimer();
   el("verify-code-form").hidden = true;
   el("request-code-form").hidden = false;
   el("login-sub").textContent = "Log in with your email — we'll send you a one-time code.";

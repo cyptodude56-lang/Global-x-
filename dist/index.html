@@ -12,9 +12,9 @@
 />
 
 <link rel="icon" type="image/svg+xml" href="/Global-x-/assets/favicon-CjkZmihN.svg" />
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
-<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png" />
-<link rel="shortcut icon" href="favicon.ico" />
+<link rel="icon" type="image/png" sizes="32x32" href="/Global-x-/assets/icon-512-nV_-sgtN.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="/Global-x-/assets/icon-512-nV_-sgtN.png" />
+<link rel="shortcut icon" href="/Global-x-/assets/icon-512-nV_-sgtN.png" />
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
 <link rel="manifest" href="/Global-x-/assets/site-DGFW9KNJ.webmanifest" />
 <meta name="theme-color" content="#10151F" />
@@ -48,7 +48,9 @@
         <div class="field"><label for="login-code">6-digit code</label>
           <input id="login-code" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" required />
         </div>
+        <p class="helper-text" id="code-timer"></p>
         <button class="submit-btn" type="submit" id="verify-code-btn">Verify &amp; log in</button>
+        <button class="link-btn" type="button" id="resend-code" hidden style="background:none;border:none;color:var(--gold-soft);cursor:pointer;margin-top:10px;">Send a new code</button>
         <button class="link-btn" type="button" id="back-to-email" style="background:none;border:none;color:var(--muted-invert);cursor:pointer;margin-top:10px;">Use a different email</button>
       </form>
 
