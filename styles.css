@@ -848,6 +848,22 @@ a { color: inherit; }
 .spend-legend-pct { font-family: var(--font-mono); color: var(--muted); }
 .spend-empty { font-size: 0.82rem; color: var(--muted); }
 
+/* Exchange rates */
+
+.fx-rates { display: flex; flex-direction: column; gap: 10px; }
+.fx-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.85rem;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.fx-row:last-child { border-bottom: none; padding-bottom: 0; }
+.fx-pair { font-weight: 600; }
+.fx-value { font-family: var(--font-mono); }
+.fx-asof { font-size: 0.68rem; color: var(--muted); margin: 6px 0 0; }
+
 /* Quick links + goals banner */
 
 .quick-links-list { display: flex; flex-direction: column; }

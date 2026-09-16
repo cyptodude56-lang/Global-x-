@@ -283,6 +283,7 @@ function renderAll() {
   renderCard();
   renderSpending();
   renderNotifications();
+  loadExchangeRates();
 }
 
 function renderTopbar() {
@@ -522,6 +523,45 @@ function renderNotifications() {
     `;
     list.appendChild(row);
   });
+}
+
+// ---- Live exchange rates (Frankfurter — free, no API key, ECB-sourced) ----
+
+const FX_CURRENCIES = ["USD", "GBP", "EUR"];
+
+async function loadExchangeRates() {
+  const home = walletCurrency(ACCOUNT);
+  const others = FX_CURRENCIES.filter((c) => c !== home);
+  const host = el("fx-rates");
+
+  try {
+    const results = await Promise.all(
+      others.map((c) =>
+        fetch(`https://api.frankfurter.dev/v2/rate/${home.toLowerCase()}/${c.toLowerCase()}`).then((r) => {
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          return r.json();
+        })
+      )
+    );
+
+    host.innerHTML = "";
+    results.forEach((r) => {
+      const row = document.createElement("div");
+      row.className = "fx-row";
+      row.innerHTML = `
+        <span class="fx-pair">${r.base} → ${r.quote}</span>
+        <span class="fx-value">${Number(r.rate).toFixed(4)}</span>
+      `;
+      host.appendChild(row);
+    });
+    const asOf = document.createElement("p");
+    asOf.className = "fx-asof";
+    asOf.textContent = `As of ${results[0].date} · rates.frankfurter.dev`;
+    host.appendChild(asOf);
+  } catch (err) {
+    host.innerHTML = '<p class="helper-text">Rates unavailable right now.</p>';
+    console.warn("Exchange rate fetch failed:", err);
+  }
 }
 
 // ---------------------------------------------------------------------------
