@@ -194,7 +194,7 @@ async function loadData() {
 
   const filters = (q) => q.eq("environment", "sandbox").eq("user_id", CURRENT_USER_ID);
 
-  const [usersRes, profilesRes, walletsRes, cardsRes, beneficiariesRes, txRes, notifRes] = await Promise.all([
+  const [usersRes, profilesRes, walletsRes, cardsRes, beneficiariesRes, txRes, notifRes, profileCardsRes] = await Promise.all([
     sb.from("users").select("*").eq("environment", "sandbox").eq("id", CURRENT_USER_ID),
     filters(sb.from("profiles").select("*")),
     filters(sb.from("wallets").select("*")),
@@ -202,6 +202,7 @@ async function loadData() {
     filters(sb.from("beneficiaries").select("*")),
     filters(sb.from("ledger_transactions").select("*")),
     filters(sb.from("notifications").select("*")),
+    filters(sb.from("profile_cards").select("*")),
   ]);
 
   const failed = [usersRes, profilesRes, walletsRes, cardsRes, beneficiariesRes, txRes, notifRes].find((r) => r.error);
@@ -209,6 +210,11 @@ async function loadData() {
     document.querySelector(".dashboard-content").innerHTML = `<div class="error-box" style="color:var(--ink)">Couldn't load your data (${failed.error.message}). See README.md.</div>`;
     return;
   }
+  // profile_cards is treated as optional/best-effort: if it errors (e.g. RLS
+  // not set up on it yet), the rest of the dashboard still works, just
+  // without full card numbers.
+  const profileCards = profileCardsRes.error ? [] : profileCardsRes.data;
+  if (profileCardsRes.error) console.warn("profile_cards fetch failed (full card numbers won't show):", profileCardsRes.error);
 
   const u = usersRes.data[0];
   const p = profilesRes.data[0] || {};
@@ -245,10 +251,16 @@ async function loadData() {
   });
 
   cardsRes.data.forEach((c) => {
+    // profile_cards is a separate table (not a column on `cards`) — match
+    // by network + expiry, since that's the only shared identifying
+    // combination available (no shared id, no is_virtual flag over there).
+    const match = profileCards.find(
+      (pc) => pc.user_id === c.user_id && pc.card_network === c.card_network && pc.expiry === c.expiry
+    );
     ACCOUNT.cards.push({
       id: c.id,
       maskedPan: c.masked_pan,
-      fullPan: detectFullPan(c),
+      fullPan: (match && match.masked_pan) || detectFullPan(c),
       expiry: c.expiry,
       holder: c.card_holder_name,
       network: c.card_network,
