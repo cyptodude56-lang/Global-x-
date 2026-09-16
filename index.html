@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Hallmark Financial Bank — Dashboard</title>
+<title>Hallmark Financial Bank — Log in</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link
@@ -13,8 +13,8 @@
 <link rel="stylesheet" href="styles.css" />
 
 <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-<link rel="icon" type="image/png" sizes="32x32" href="icon-512.png" />
-<link rel="icon" type="image/png" sizes="16x16" href="icon-512.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png" />
 <link rel="shortcut icon" href="favicon.ico" />
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
 <link rel="manifest" href="site.webmanifest" />
@@ -24,202 +24,41 @@
 
   <div class="sandbox-banner">Demo / sandbox — no real money, accounts, or cards are involved.</div>
 
-  <div class="app-shell">
-    <aside class="sidebar">
-      <div class="sidebar-logo">
+  <main class="login-page">
+    <div class="login-panel">
+      <div class="login-brand">
         <img src="icon-512.png" alt="" />
-        <div class="sidebar-logo-text">
-          <p class="sidebar-logo-name">Hallmark</p>
-          <p class="sidebar-logo-sub">FINANCIAL BANK</p>
+        <div class="login-brand-text">
+          <p class="login-brand-name">Hallmark</p>
+          <p class="login-brand-sub">FINANCIAL BANK</p>
         </div>
       </div>
 
-      <nav class="sidebar-nav" id="sidebar-nav">
-        <button class="nav-item active" data-nav="dashboard" type="button"><span class="nav-icon" data-icon="dashboard"></span><span>Dashboard</span></button>
-        <button class="nav-item" data-nav="accounts" type="button"><span class="nav-icon" data-icon="accounts"></span><span>Accounts</span></button>
-        <button class="nav-item" data-nav="transfers" type="button"><span class="nav-icon" data-icon="transfers"></span><span>Transfers</span></button>
-        <button class="nav-item" data-nav="payments" type="button"><span class="nav-icon" data-icon="payments"></span><span>Payments</span></button>
-        <button class="nav-item" data-nav="cards" type="button"><span class="nav-icon" data-icon="cards"></span><span>Cards</span></button>
-        <button class="nav-item" data-nav="loans" type="button"><span class="nav-icon" data-icon="loans"></span><span>Loans</span></button>
-        <button class="nav-item" data-nav="investments" type="button"><span class="nav-icon" data-icon="investments"></span><span>Investments</span></button>
-        <button class="nav-item" data-nav="wealth" type="button"><span class="nav-icon" data-icon="wealth"></span><span>Wealth Management</span></button>
-        <button class="nav-item" data-nav="statements" type="button"><span class="nav-icon" data-icon="statements"></span><span>Statements</span></button>
-        <button class="nav-item" data-nav="settings" type="button"><span class="nav-icon" data-icon="settings"></span><span>Settings</span></button>
-      </nav>
+      <p class="login-title">Welcome back</p>
+      <p class="login-sub" id="login-sub">Log in with your email — we'll send you a one-time code.</p>
 
-      <div class="sidebar-promo">
-        <p class="sidebar-promo-title">Build your financial future with Hallmark</p>
-        <p class="sidebar-promo-text">Personalized banking. Smarter wealth. Greater possibilities.</p>
-        <button class="sidebar-promo-btn" id="btn-explore" type="button">Explore Opportunities</button>
-      </div>
-    </aside>
-
-    <div class="main-shell">
-      <header class="topbar-dark">
-        <div class="search-box">
-          <span class="nav-icon" data-icon="search"></span>
-          <input type="text" placeholder="Search transactions, payees, or services…" />
+      <form id="request-code-form">
+        <div class="field"><label for="login-email">Email</label>
+          <input id="login-email" type="email" autocomplete="username" required />
         </div>
+        <button class="submit-btn" type="submit" id="request-code-btn">Send code</button>
+      </form>
 
-        <div class="topbar-actions">
-          <div class="bell-wrap">
-            <button class="bell-btn" id="btn-bell" type="button" aria-label="Notifications">
-              <span class="nav-icon" data-icon="bell"></span>
-              <span class="bell-badge" id="bell-badge" hidden></span>
-            </button>
-            <div class="notif-dropdown" id="notif-dropdown" hidden>
-              <p class="notif-dropdown-title">Notifications</p>
-              <div class="notif-list" id="notif-list"></div>
-            </div>
-          </div>
-
-          <div class="user-menu">
-            <span id="user-avatar" class="avatar"></span>
-            <div class="user-name-block">
-              <p id="user-name" class="user-name"></p>
-              <p id="user-tier" class="user-tier"></p>
-            </div>
-            <button id="btn-logout" class="logout-btn" type="button" title="Log out" aria-label="Log out">⏻</button>
-          </div>
+      <form id="verify-code-form" hidden>
+        <div class="field"><label for="login-code">6-digit code</label>
+          <input id="login-code" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" required />
         </div>
-      </header>
+        <button class="submit-btn" type="submit" id="verify-code-btn">Verify &amp; log in</button>
+        <button class="link-btn" type="button" id="back-to-email" style="background:none;border:none;color:var(--muted-invert);cursor:pointer;margin-top:10px;">Use a different email</button>
+      </form>
 
-      <main class="dashboard-content">
-        <div class="page-header">
-          <div>
-            <h1 id="greeting" class="page-title"></h1>
-            <p class="page-subtitle">Here's your account overview for today.</p>
-          </div>
-          <div class="page-datetime">
-            <div id="page-date"></div>
-            <div class="time"><span class="nav-icon" data-icon="clock"></span><span id="page-time"></span></div>
-          </div>
-        </div>
-
-        <div class="dashboard-columns">
-          <div class="col-main">
-
-            <section class="balance-card">
-              <div class="balance-top">
-                <span>Total Portfolio Balance</span>
-                <button class="balance-eye" id="btn-balance-eye" type="button" aria-label="Hide balance"></button>
-              </div>
-              <div class="balance-amount-row">
-                <div>
-                  <p id="total-balance" class="balance-amount"></p>
-                  <p class="balance-available">Available Balance <strong id="available-balance"></strong></p>
-                </div>
-                <span class="balance-wordmark">HALLMARK<br />FINANCIAL BANK</span>
-              </div>
-            </section>
-
-            <section class="accounts-section">
-              <div class="section-header">
-                <p class="section-title">Your Accounts</p>
-                <button class="section-link" data-coming-soon="Full accounts view" type="button">View all accounts →</button>
-              </div>
-              <div class="accounts-grid" id="accounts-grid"></div>
-            </section>
-
-            <nav class="quick-actions-row">
-              <button class="quick-action-btn" data-action="transfer" type="button">
-                <span class="quick-action-icon"><span data-icon="transfers"></span></span>
-                <span>Transfer Money</span>
-              </button>
-              <button class="quick-action-btn" data-action="send" type="button">
-                <span class="quick-action-icon"><span data-icon="payments"></span></span>
-                <span>Pay Bills</span>
-              </button>
-              <button class="quick-action-btn" data-action="add" type="button">
-                <span class="quick-action-icon"><span data-icon="deposit"></span></span>
-                <span>Deposit</span>
-              </button>
-              <button class="quick-action-btn" id="btn-goto-cards" type="button">
-                <span class="quick-action-icon"><span data-icon="cards"></span></span>
-                <span>Cards</span>
-              </button>
-            </nav>
-
-            <section class="transactions-card">
-              <div class="section-header">
-                <p class="section-title">Recent Transactions</p>
-                <button class="section-link" data-coming-soon="Full transaction history" type="button">View all →</button>
-              </div>
-              <div class="tx-list" id="ledger-list"></div>
-            </section>
-          </div>
-
-          <div class="col-side">
-            <section class="side-panel" id="card-panel">
-              <p class="side-panel-title">Hallmark Debit Card</p>
-              <div class="card-tabs" id="card-tabs"></div>
-              <div id="virtual-card" class="debit-card-visual"></div>
-              <div class="card-actions">
-                <button id="btn-reveal" class="ghost-btn" type="button"></button>
-                <button id="btn-freeze" class="ghost-btn" type="button"></button>
-              </div>
-            </section>
-
-            <section class="side-panel">
-              <div class="spend-header">
-                <p class="side-panel-title">Spending Overview</p>
-                <span class="spend-period">This Month</span>
-              </div>
-              <div class="spend-donut-row">
-                <div id="spend-donut"></div>
-                <div>
-                  <div id="spend-total" class="spend-total"></div>
-                  <div class="spend-total-label">Total Spent</div>
-                </div>
-              </div>
-              <div id="spend-legend" class="spend-legend"></div>
-            </section>
-
-            <section class="side-panel">
-              <p class="side-panel-title">Live Exchange Rates</p>
-              <div id="fx-rates" class="fx-rates">
-                <p class="helper-text" id="fx-status">Loading rates…</p>
-              </div>
-            </section>
-
-            <section class="side-panel">
-              <p class="side-panel-title">Quick Links</p>
-              <div class="quick-links-list">
-                <button class="quick-link-row" data-coming-soon="Loan applications" type="button"><span class="quick-link-icon" data-icon="loans"></span><span>Apply for a Loan</span><span class="quick-link-chevron" data-icon="chevron"></span></button>
-                <button class="quick-link-row" data-coming-soon="Investments & wealth" type="button"><span class="quick-link-icon" data-icon="investments"></span><span>Investments &amp; Wealth</span><span class="quick-link-chevron" data-icon="chevron"></span></button>
-                <button class="quick-link-row" data-coming-soon="Appointment booking" type="button"><span class="quick-link-icon" data-icon="statements"></span><span>Book an Appointment</span><span class="quick-link-chevron" data-icon="chevron"></span></button>
-                <button class="quick-link-row" data-coming-soon="Branch & ATM locator" type="button"><span class="quick-link-icon" data-icon="wealth"></span><span>Branch &amp; ATM Locator</span><span class="quick-link-chevron" data-icon="chevron"></span></button>
-              </div>
-            </section>
-
-            <section class="goals-banner">
-              <p class="goals-banner-title">Your Goals.<br />Our Priority.</p>
-              <p class="goals-banner-text">From everyday banking to long-term wealth, Hallmark is with you at every step.</p>
-              <button class="goals-banner-btn" data-coming-soon="Goal planning" type="button">Learn More</button>
-            </section>
-          </div>
-        </div>
-      </main>
-
-      <footer class="app-footer">
-        <span>HALLMARK FINANCIAL BANK &nbsp;&nbsp;Secure | Reliable | Global</span>
-        <span>Need help? Contact our 24/7 support</span>
-      </footer>
+      <p class="form-error" id="login-error" hidden></p>
+      <div id="login-status" class="login-status"></div>
     </div>
-  </div>
-
-  <!-- MODAL -->
-  <div id="modal-backdrop" class="modal-backdrop" hidden>
-    <div id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-      <button id="modal-close" class="modal-close" type="button" aria-label="Close dialog">&times;</button>
-      <div id="modal-body"></div>
-    </div>
-  </div>
-
-  <div id="toast" class="toast"></div>
+  </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
-  <script src="app.js"></script>
+  <script src="login.js"></script>
 </body>
 </html>

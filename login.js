@@ -1,12 +1,11 @@
 // ---------------------------------------------------------------------------
-// Hallmark — login page.
+// Hallmark — login page (email OTP via Supabase Auth).
 //
-// Checks the entered email/username + password against the `logins` table
-// you loaded from hallmark_logins.xlsx. On success, stores which user_id
-// logged in in sessionStorage and sends the browser to dashboard.html.
-//
-// This is a demo login, not real authentication — see README.md ("Logging
-// in") for exactly what that means and the trade-offs involved.
+// Step 1: enter email, request a 6-digit code (supabase.auth.signInWithOtp,
+// shouldCreateUser:false so only the 7 pre-created demo accounts can log
+// in — nobody can type a random email and create a new account here).
+// Step 2: enter the code, verify it (supabase.auth.verifyOtp). On success
+// Supabase's own session (not sessionStorage) is what dashboard.html reads.
 // ---------------------------------------------------------------------------
 
 const sb =
@@ -14,113 +13,107 @@ const sb =
     ? window.supabase.createClient(window.HALLMARK_SUPABASE_URL, window.HALLMARK_SUPABASE_ANON_KEY)
     : null;
 
-let LOGINS = [];
-let CUSTOMER_IDS = new Set();
-let dataReady = false;
-
 const el = (id) => document.getElementById(id);
+let pendingEmail = null;
 
-function showLoginStatus(html) {
+function showStatus(html) {
   el("login-status").innerHTML = html;
 }
 
-function showLoginFormError(msg) {
+function showFormError(msg) {
   const e = el("login-error");
   e.textContent = msg;
   e.hidden = false;
 }
 
-function hideLoginFormError() {
+function hideFormError() {
   const e = el("login-error");
   e.hidden = true;
   e.textContent = "";
 }
 
-function attemptLogin(identifier, password) {
-  const id = identifier.trim().toLowerCase();
-  return (
-    LOGINS.find((l) => (l.email.toLowerCase() === id || l.username.toLowerCase() === id) && l.password === password) ||
-    null
-  );
-}
+async function init() {
+  if (!sb) {
+    showStatus(
+      `<div class="error-box">Supabase isn't configured yet. Open <code>supabase-config.js</code> and fill in your project URL and anon key.</div>`
+    );
+    el("request-code-btn").disabled = true;
+    return;
+  }
 
-async function loadData() {
-  // Already signed in this tab? Skip straight to the dashboard.
-  if (sessionStorage.getItem("hallmark_user_id")) {
+  // Already have a live Supabase session in this browser? Skip straight in.
+  const {
+    data: { session },
+  } = await sb.auth.getSession();
+  if (session) {
     window.location.href = "dashboard.html";
-    return;
   }
-
-  if (!sb) {
-    showLoginStatus(
-      `<div class="error-box">Supabase isn't configured yet. Open <code>supabase-config.js</code> and fill in your project URL and anon key — see README.md for where to find them.</div>`
-    );
-    el("login-submit").disabled = true;
-    return;
-  }
-
-  showLoginStatus(`<p class="loading-text">Loading demo data…</p>`);
-  el("login-submit").disabled = true;
-
-  const [usersRes, loginsRes] = await Promise.all([
-    sb.from("users").select("id, role").eq("environment", "sandbox"),
-    sb.from("logins").select("*").eq("environment", "sandbox"),
-  ]);
-
-  const failed = [usersRes, loginsRes].find((r) => r.error);
-  if (failed) {
-    showLoginStatus(
-      `<div class="error-box">Couldn't load demo data (${failed.error.message}). Make sure you've run <code>schema.sql</code> and then <code>seed.sql</code> in your Supabase project's SQL editor, and that you've loaded a <code>logins</code> table matching <code>hallmark_logins.xlsx</code> — see README.md.</div>`
-    );
-    return;
-  }
-
-  LOGINS = loginsRes.data;
-  CUSTOMER_IDS = new Set(usersRes.data.filter((u) => u.role === "customer").map((u) => u.id));
-  dataReady = true;
-
-  console.info("Hallmark login page loaded:", { customers: CUSTOMER_IDS.size, logins: LOGINS.length });
-
-  if (LOGINS.length === 0) {
-    showLoginStatus(
-      `<div class="error-box">Connected to Supabase, but the <code>logins</code> table returned 0 rows for <code>environment = 'sandbox'</code>. Check that the table has data, that the column really says "sandbox", and that its Row Level Security policy allows public reads — see "Logging in" in README.md, or run <code>logins_rls.sql</code>.</div>`
-    );
-    return;
-  }
-
-  showLoginStatus("");
-  el("login-submit").disabled = false;
 }
 
-el("login-form").addEventListener("submit", (e) => {
+el("request-code-form").addEventListener("submit", async (e) => {
   e.preventDefault();
-  hideLoginFormError();
+  hideFormError();
 
   if (!sb) {
-    showLoginFormError("Supabase isn't configured yet — see README.md.");
-    return;
-  }
-  if (!dataReady) {
-    showLoginFormError("Demo data hasn't finished loading yet — try again in a moment.");
-    return;
-  }
-  if (LOGINS.length === 0) {
-    showLoginFormError("No login rows are available — see the message above for why.");
+    showFormError("Supabase isn't configured yet — see README.md.");
     return;
   }
 
-  const match = attemptLogin(el("login-id").value, el("login-password").value);
-  if (!match) {
-    showLoginFormError("Incorrect email/username or password.");
-    return;
-  }
-  if (!CUSTOMER_IDS.has(match.user_id)) {
-    showLoginFormError("This login isn't linked to a customer dashboard in this demo.");
+  const email = el("login-email").value.trim();
+  const btn = el("request-code-btn");
+  btn.disabled = true;
+  btn.textContent = "Sending…";
+
+  const { error } = await sb.auth.signInWithOtp({
+    email,
+    options: { shouldCreateUser: false },
+  });
+
+  btn.disabled = false;
+  btn.textContent = "Send code";
+
+  if (error) {
+    showFormError("Couldn't send a code to that address — check it's one of the demo logins.");
     return;
   }
 
-  sessionStorage.setItem("hallmark_user_id", match.user_id);
+  pendingEmail = email;
+  el("request-code-form").hidden = true;
+  el("verify-code-form").hidden = false;
+  el("login-sub").textContent = `We sent a 6-digit code to ${email}. Enter it below.`;
+  el("login-code").focus();
+});
+
+el("verify-code-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  hideFormError();
+
+  const btn = el("verify-code-btn");
+  btn.disabled = true;
+  btn.textContent = "Verifying…";
+
+  const { data, error } = await sb.auth.verifyOtp({
+    email: pendingEmail,
+    token: el("login-code").value.trim(),
+    type: "email",
+  });
+
+  btn.disabled = false;
+  btn.textContent = "Verify & log in";
+
+  if (error || !data.session) {
+    showFormError("That code didn't work — check it and try again.");
+    return;
+  }
+
   window.location.href = "dashboard.html";
 });
 
-loadData();
+el("back-to-email").addEventListener("click", () => {
+  el("verify-code-form").hidden = true;
+  el("request-code-form").hidden = false;
+  el("login-sub").textContent = "Log in with your email — we'll send you a one-time code.";
+  hideFormError();
+});
+
+init();

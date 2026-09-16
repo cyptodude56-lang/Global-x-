@@ -1,19 +1,20 @@
 // ---------------------------------------------------------------------------
 // Hallmark — dashboard page.
 //
-// Requires a session set by login.js (index.html) — redirects back to the
-// login page if sessionStorage has no signed-in user_id. Fetches only this
-// one customer's own rows from Supabase (still via the same public anon
-// key as everywhere else — see README.md for what that does and doesn't
-// protect). Interactive actions (Add money / Send / Transfer / Withdraw)
-// still only mutate an in-memory copy for this browser tab; nothing is
-// written back to Supabase.
+// Requires a real Supabase Auth session (established by login.js's OTP
+// flow on index.html) — redirects back to the login page if there isn't
+// one. The signed-in auth user is matched back to a customer record via
+// the auth_user_id column (see auth_migration.sql / link_auth_users.sql).
+// Row Level Security is now scoped to auth.uid() too, so this isn't just
+// a UI-level check anymore — the anon key genuinely cannot read another
+// customer's rows without that customer's own session. See README.md.
+//
+// Interactive actions (Add money / Send / Transfer / Withdraw) still only
+// mutate an in-memory copy for this browser tab; nothing is written back
+// to Supabase.
 // ---------------------------------------------------------------------------
 
-const CURRENT_USER_ID = sessionStorage.getItem("hallmark_user_id");
-if (!CURRENT_USER_ID) {
-  window.location.href = "index.html";
-}
+let CURRENT_USER_ID = null;
 
 const FLAGS = { USA: "🇺🇸", UK: "🇬🇧", Germany: "🇩🇪" };
 const AVATAR_COLORS = ["#1F6F5C", "#2451B0", "#C98A3B", "#8B3A62", "#3A6B8A", "#6B7A2E", "#7A3A3A"];
@@ -30,6 +31,41 @@ let txCounter = 0;
 const state = { highlightIds: [], balanceRevealed: true, activeCardIndex: 0 };
 
 const el = (id) => document.getElementById(id);
+
+// Resolves the real Supabase session into a public.users id. Returns false
+// (and redirects) if there's no session, or no customer row linked to it.
+async function resolveSession() {
+  if (!sb) {
+    document.querySelector(".dashboard-content").innerHTML =
+      '<div class="error-box" style="color:var(--ink)">Supabase isn\'t configured yet. Open <code>supabase-config.js</code> and fill in your project URL and anon key.</div>';
+    return false;
+  }
+
+  const {
+    data: { session },
+  } = await sb.auth.getSession();
+  if (!session) {
+    window.location.href = "index.html";
+    return false;
+  }
+
+  const { data: userRow, error } = await sb
+    .from("users")
+    .select("id")
+    .eq("auth_user_id", session.user.id)
+    .single();
+
+  if (error || !userRow) {
+    // Logged in with Supabase Auth, but not linked to a demo customer —
+    // e.g. link_auth_users.sql hasn't been run yet for this account.
+    await sb.auth.signOut();
+    window.location.href = "index.html";
+    return false;
+  }
+
+  CURRENT_USER_ID = userRow.id;
+  return true;
+}
 
 // ---------------------------------------------------------------------------
 // Small line-icon set (plain SVG, no external requests)
@@ -795,11 +831,11 @@ function wireForm(kind) {
 // Wiring
 // ---------------------------------------------------------------------------
 
-function init() {
+async function init() {
   mountIcons();
 
-  el("btn-logout").addEventListener("click", () => {
-    sessionStorage.removeItem("hallmark_user_id");
+  el("btn-logout").addEventListener("click", async () => {
+    await sb.auth.signOut();
     window.location.href = "index.html";
   });
 
@@ -867,6 +903,8 @@ function init() {
 
   el("btn-explore").addEventListener("click", () => showToast("Explore Opportunities — coming soon in a later phase"));
 
+  const ok = await resolveSession();
+  if (!ok) return;
   loadData();
 }
 
