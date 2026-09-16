@@ -73,7 +73,8 @@ el("request-code-form").addEventListener("submit", async (e) => {
   btn.textContent = "Send code";
 
   if (error) {
-    showFormError("Couldn't send a code to that address — check it's one of the demo logins.");
+    console.error("signInWithOtp error:", error);
+    showFormError(`Couldn't send a code: ${error.message} (status ${error.status ?? "unknown"})`);
     return;
   }
 
@@ -102,7 +103,8 @@ el("verify-code-form").addEventListener("submit", async (e) => {
   btn.textContent = "Verify & log in";
 
   if (error || !data.session) {
-    showFormError("That code didn't work — check it and try again.");
+    console.error("verifyOtp error:", error);
+    showFormError(error ? `That code didn't work: ${error.message}` : "That code didn't work — check it and try again.");
     return;
   }
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Hallmark Financial Bank — Prototype</title>
+<title>Hallmark Financial Bank — Log in</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link
@@ -12,93 +12,53 @@
 />
 
 <link rel="icon" type="image/svg+xml" href="/Global-x-/assets/favicon-CjkZmihN.svg" />
-<link rel="icon" type="image/png" sizes="32x32" href="/Global-x-/assets/icon-512-nV_-sgtN.png" />
-<link rel="icon" type="image/png" sizes="16x16" href="/Global-x-/assets/icon-512-nV_-sgtN.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png" />
 <link rel="shortcut icon" href="favicon.ico" />
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
 <link rel="manifest" href="/Global-x-/assets/site-DGFW9KNJ.webmanifest" />
-<meta name="theme-color" content="#1B2430" />
-  <link rel="stylesheet" crossorigin href="/Global-x-/assets/index-YUe5Froj.css">
+<meta name="theme-color" content="#10151F" />
+  <link rel="stylesheet" crossorigin href="/Global-x-/assets/index-B1muOchM.css">
 </head>
 <body>
 
   <div class="sandbox-banner">Demo / sandbox — no real money, accounts, or cards are involved.</div>
 
-  <!-- LOGIN -->
-  <main id="screen-login" class="screen screen-login">
-    <div class="login-card">
-      <p class="wordmark">Hallmark</p>
-      <p class="login-sub">Log in to view your demo account.</p>
+  <main class="login-page">
+    <div class="login-panel">
+      <div class="login-brand">
+        <img src="/Global-x-/assets/icon-512-nV_-sgtN.png" alt="" />
+        <div class="login-brand-text">
+          <p class="login-brand-name">Hallmark</p>
+          <p class="login-brand-sub">FINANCIAL BANK</p>
+        </div>
+      </div>
 
-      <form id="login-form">
-        <div class="field"><label for="login-id">Email or username</label>
-          <input id="login-id" type="text" autocomplete="username" required />
+      <p class="login-title">Welcome back</p>
+      <p class="login-sub" id="login-sub">Log in with your email — we'll send you a one-time code.</p>
+
+      <form id="request-code-form">
+        <div class="field"><label for="login-email">Email</label>
+          <input id="login-email" type="email" autocomplete="username" required />
         </div>
-        <div class="field"><label for="login-password">Password</label>
-          <input id="login-password" type="password" autocomplete="current-password" required />
-        </div>
-        <p class="form-error" id="login-error" hidden></p>
-        <button class="submit-btn" type="submit" id="login-submit">Log in</button>
+        <button class="submit-btn" type="submit" id="request-code-btn">Send code</button>
       </form>
 
+      <form id="verify-code-form" hidden>
+        <div class="field"><label for="login-code">6-digit code</label>
+          <input id="login-code" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" required />
+        </div>
+        <button class="submit-btn" type="submit" id="verify-code-btn">Verify &amp; log in</button>
+        <button class="link-btn" type="button" id="back-to-email" style="background:none;border:none;color:var(--muted-invert);cursor:pointer;margin-top:10px;">Use a different email</button>
+      </form>
+
+      <p class="form-error" id="login-error" hidden></p>
       <div id="login-status" class="login-status"></div>
     </div>
   </main>
 
-  <!-- DASHBOARD -->
-  <main id="screen-dashboard" class="screen screen-dashboard" hidden>
-    <header class="topbar">
-      <div class="topbar-user">
-        <span id="user-avatar" class="avatar"></span>
-        <div>
-          <p id="user-name" class="user-name"></p>
-          <p id="user-loc" class="user-loc"></p>
-        </div>
-      </div>
-      <button id="btn-logout" class="link-btn" type="button">Log out</button>
-    </header>
-
-    <section class="balance-panel">
-      <p class="balance-label">Total across accounts</p>
-      <p id="total-balance" class="balance-amount"></p>
-      <div id="currency-chips" class="currency-chips"></div>
-    </section>
-
-    <nav class="quick-actions">
-      <button class="action-btn" data-action="add" type="button">Add money</button>
-      <button class="action-btn" data-action="send" type="button">Send</button>
-      <button class="action-btn" data-action="transfer" type="button">Transfer</button>
-      <button class="action-btn" data-action="withdraw" type="button">Withdraw</button>
-    </nav>
-
-    <div class="dashboard-grid">
-      <section class="card-panel">
-        <p class="panel-title">Card</p>
-        <div id="card-tabs" class="card-tabs"></div>
-        <div id="virtual-card" class="virtual-card"></div>
-        <div class="card-actions">
-          <button id="btn-reveal" class="ghost-btn" type="button"></button>
-          <button id="btn-freeze" class="ghost-btn" type="button"></button>
-        </div>
-      </section>
-
-      <section class="ledger-panel">
-        <p class="panel-title">Transaction ledger</p>
-        <div id="ledger-list" class="ledger-list"></div>
-      </section>
-    </div>
-  </main>
-
-  <!-- MODAL -->
-  <div id="modal-backdrop" class="modal-backdrop" hidden>
-    <div id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-      <button id="modal-close" class="modal-close" type="button" aria-label="Close dialog">&times;</button>
-      <div id="modal-body"></div>
-    </div>
-  </div>
-
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
-  <script src="app.js"></script>
+  <script src="login.js"></script>
 </body>
 </html>
