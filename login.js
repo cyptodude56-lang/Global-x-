@@ -24,6 +24,7 @@ const sb =
 
 const el = (id) => document.getElementById(id);
 let pendingEmail = null;
+let pendingMode = "login"; // "login" or "signup" — which form requested the current code
 let timerHandle = null;
 let codeRequestedAt = null;
 
@@ -132,19 +133,22 @@ async function init() {
   }
 }
 
-async function requestCode(email) {
+async function requestCode(email, signupOptions) {
   hideFormError();
-  const btn = el("request-code-btn");
+  const btn = signupOptions ? el("signup-btn") : el("request-code-btn");
+  const originalLabel = btn.textContent;
   btn.disabled = true;
   btn.textContent = "Sending…";
 
   const { error } = await sb.auth.signInWithOtp({
     email,
-    options: { shouldCreateUser: false },
+    options: signupOptions
+      ? { shouldCreateUser: true, data: signupOptions }
+      : { shouldCreateUser: false },
   });
 
   btn.disabled = false;
-  btn.textContent = "Send code";
+  btn.textContent = originalLabel;
 
   if (error) {
     console.error("signInWithOtp error:", error);
@@ -153,7 +157,10 @@ async function requestCode(email) {
   }
 
   pendingEmail = email;
+  pendingMode = signupOptions ? "signup" : "login";
   el("request-code-form").hidden = true;
+  el("signup-form").hidden = true;
+  el("toggle-to-signup-line").hidden = true;
   el("verify-code-form").hidden = false;
   el("login-sub").textContent = `We sent a 6-digit code to ${email}. Enter it below.`;
   el("login-code").value = "";
@@ -169,6 +176,35 @@ el("request-code-form").addEventListener("submit", async (e) => {
     return;
   }
   await requestCode(el("login-email").value.trim());
+});
+
+el("signup-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!sb) {
+    showFormError("Supabase isn't configured yet — see README.md.");
+    return;
+  }
+  await requestCode(el("signup-email").value.trim(), {
+    first_name: el("signup-first-name").value.trim(),
+    last_name: el("signup-last-name").value.trim(),
+    country: el("signup-country").value,
+  });
+});
+
+el("show-signup").addEventListener("click", () => {
+  hideFormError();
+  el("request-code-form").hidden = true;
+  el("toggle-to-signup-line").hidden = true;
+  el("signup-form").hidden = false;
+  el("login-title").textContent = "Create your account";
+});
+
+el("back-to-login-from-signup").addEventListener("click", () => {
+  hideFormError();
+  el("signup-form").hidden = true;
+  el("request-code-form").hidden = false;
+  el("toggle-to-signup-line").hidden = false;
+  el("login-title").textContent = "Welcome back";
 });
 
 el("resend-code").addEventListener("click", async () => {
@@ -210,7 +246,14 @@ el("verify-code-form").addEventListener("submit", async (e) => {
 el("back-to-email").addEventListener("click", () => {
   stopCodeTimer();
   el("verify-code-form").hidden = true;
-  el("request-code-form").hidden = false;
+  if (pendingMode === "signup") {
+    el("signup-form").hidden = false;
+    el("login-title").textContent = "Create your account";
+  } else {
+    el("request-code-form").hidden = false;
+    el("toggle-to-signup-line").hidden = false;
+    el("login-title").textContent = "Welcome back";
+  }
   el("login-sub").textContent = "Log in with your email — we'll send you a one-time code.";
   hideFormError();
 });
