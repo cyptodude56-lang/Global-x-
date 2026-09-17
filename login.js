@@ -24,7 +24,6 @@ const sb =
 
 const el = (id) => document.getElementById(id);
 let pendingEmail = null;
-let pendingMode = "login"; // "login" or "signup" — which form requested the current code
 let timerHandle = null;
 let codeRequestedAt = null;
 
@@ -133,22 +132,19 @@ async function init() {
   }
 }
 
-async function requestCode(email, signupOptions) {
+async function requestCode(email) {
   hideFormError();
-  const btn = signupOptions ? el("signup-btn") : el("request-code-btn");
-  const originalLabel = btn.textContent;
+  const btn = el("request-code-btn");
   btn.disabled = true;
   btn.textContent = "Sending…";
 
   const { error } = await sb.auth.signInWithOtp({
     email,
-    options: signupOptions
-      ? { shouldCreateUser: true, data: signupOptions }
-      : { shouldCreateUser: false },
+    options: { shouldCreateUser: false },
   });
 
   btn.disabled = false;
-  btn.textContent = originalLabel;
+  btn.textContent = "Send code";
 
   if (error) {
     console.error("signInWithOtp error:", error);
@@ -157,7 +153,6 @@ async function requestCode(email, signupOptions) {
   }
 
   pendingEmail = email;
-  pendingMode = signupOptions ? "signup" : "login";
   el("request-code-form").hidden = true;
   el("signup-form").hidden = true;
   el("toggle-to-signup-line").hidden = true;
@@ -184,11 +179,39 @@ el("signup-form").addEventListener("submit", async (e) => {
     showFormError("Supabase isn't configured yet — see README.md.");
     return;
   }
-  await requestCode(el("signup-email").value.trim(), {
-    first_name: el("signup-first-name").value.trim(),
-    last_name: el("signup-last-name").value.trim(),
-    country: el("signup-country").value,
+  hideFormError();
+
+  const btn = el("signup-btn");
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Sending…";
+
+  const { error } = await sb.auth.signInWithOtp({
+    email: el("signup-email").value.trim(),
+    options: {
+      shouldCreateUser: true,
+      emailRedirectTo: new URL("confirm-email.html", window.location.href).toString(),
+      data: {
+        first_name: el("signup-first-name").value.trim(),
+        last_name: el("signup-last-name").value.trim(),
+        country: el("signup-country").value,
+      },
+    },
   });
+
+  btn.disabled = false;
+  btn.textContent = originalLabel;
+
+  if (error) {
+    console.error("signup signInWithOtp error:", error);
+    showFormError(`Couldn't send a confirmation email: ${error.message} (status ${error.status ?? "unknown"})`);
+    return;
+  }
+
+  el("signup-form").hidden = true;
+  showStatus(
+    `<p class="helper-text">Check <strong>${el("signup-email").value.trim()}</strong> for a confirmation link, then click it to continue.</p>`
+  );
 });
 
 el("show-signup").addEventListener("click", () => {
@@ -246,14 +269,9 @@ el("verify-code-form").addEventListener("submit", async (e) => {
 el("back-to-email").addEventListener("click", () => {
   stopCodeTimer();
   el("verify-code-form").hidden = true;
-  if (pendingMode === "signup") {
-    el("signup-form").hidden = false;
-    el("login-title").textContent = "Create your account";
-  } else {
-    el("request-code-form").hidden = false;
-    el("toggle-to-signup-line").hidden = false;
-    el("login-title").textContent = "Welcome back";
-  }
+  el("request-code-form").hidden = false;
+  el("toggle-to-signup-line").hidden = false;
+  el("login-title").textContent = "Welcome back";
   el("login-sub").textContent = "Log in with your email — we'll send you a one-time code.";
   hideFormError();
 });

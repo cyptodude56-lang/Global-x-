@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hallmark Financial Bank — Complete your profile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap"
+  rel="stylesheet"
+/>
+<link rel="stylesheet" href="styles.css" />
+<link rel="icon" type="image/svg+xml" href="favicon.svg" />
+<meta name="theme-color" content="#10151F" />
+</head>
+<body>
+
+  <main class="login-page">
+    <div class="login-panel">
+      <div class="login-brand">
+        <img src="icon-512.png" alt="" />
+        <div class="login-brand-text">
+          <p class="login-brand-name">Hallmark</p>
+          <p class="login-brand-sub">FINANCIAL BANK</p>
+        </div>
+      </div>
+
+      <p class="login-title">A few more details</p>
+      <p class="login-sub">This is what opens your accounts — we'll generate your account and routing numbers next.</p>
+
+      <form id="profile-form">
+        <div class="field"><label for="pf-phone">Phone number</label>
+          <input id="pf-phone" type="tel" required />
+        </div>
+        <div class="field"><label for="pf-address">Address</label>
+          <input id="pf-address" type="text" required />
+        </div>
+        <div class="field"><label for="pf-city">City</label>
+          <input id="pf-city" type="text" required />
+        </div>
+        <div class="field"><label for="pf-postal">Postal code</label>
+          <input id="pf-postal" type="text" required />
+        </div>
+        <p class="form-error" id="pf-error" hidden></p>
+        <button class="submit-btn" type="submit" id="pf-submit">Create my accounts</button>
+      </form>
+
+      <div id="pf-status" class="login-status"></div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="complete-profile.js"></script>
+</body>
+</html>

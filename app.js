@@ -452,11 +452,18 @@ function renderCard() {
   const cardEl = el("virtual-card");
   const c = ACCOUNT.cards[state.activeCardIndex];
   if (!c) {
-    cardEl.innerHTML = "";
+    cardEl.className = "debit-card-visual";
+    cardEl.style.border = "2px dashed rgba(255,255,255,0.25)";
+    cardEl.style.background = "transparent";
+    cardEl.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted-invert);font-size:0.85rem;">No card yet</div>`;
     el("btn-freeze").hidden = true;
     el("btn-reveal").hidden = true;
+    el("btn-get-card").hidden = false;
     return;
   }
+  cardEl.style.border = "";
+  cardEl.style.background = "";
+  el("btn-get-card").hidden = true;
   el("btn-freeze").hidden = false;
   el("btn-reveal").hidden = false;
 
@@ -919,6 +926,58 @@ async function init() {
     const c = ACCOUNT.cards[state.activeCardIndex];
     if (!c || !c.fullPan) return;
     c.revealed = !c.revealed;
+    renderCard();
+  });
+
+  el("btn-get-card").addEventListener("click", async () => {
+    const btn = el("btn-get-card");
+    btn.disabled = true;
+    btn.textContent = "Creating your card…";
+
+    const last4 = String(Math.floor(1000 + Math.random() * 9000));
+    const middle = Array.from({ length: 8 }, () => Math.floor(Math.random() * 10)).join("");
+    const fullPan = "4111" + middle + last4;
+    const expiry = (() => {
+      const d = new Date();
+      d.setFullYear(d.getFullYear() + 4);
+      return String(d.getMonth() + 1).padStart(2, "0") + "/" + String(d.getFullYear()).slice(-2);
+    })();
+
+    const { error } = await sb.from("cards").insert({
+      user_id: ACCOUNT.id,
+      card_network: "Visa",
+      card_type: "debit",
+      masked_pan: `4111 **** **** ${last4}`,
+      full_pan: fullPan,
+      expiry,
+      card_holder_name: `${ACCOUNT.firstName} ${ACCOUNT.lastName}`,
+      status: "active",
+      is_virtual: false,
+      environment: "sandbox",
+    });
+
+    btn.disabled = false;
+    btn.textContent = "Get card";
+
+    if (error) {
+      console.error("card creation error:", error);
+      showToast(`Couldn't create your card: ${error.message}`);
+      return;
+    }
+
+    ACCOUNT.cards.push({
+      id: null,
+      maskedPan: `4111 **** **** ${last4}`,
+      fullPan,
+      expiry,
+      holder: `${ACCOUNT.firstName} ${ACCOUNT.lastName}`,
+      network: "Visa",
+      isVirtual: false,
+      frozen: false,
+      revealed: false,
+    });
+    state.activeCardIndex = ACCOUNT.cards.length - 1;
+    renderCardTabs();
     renderCard();
   });
 
