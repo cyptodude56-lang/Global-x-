@@ -14,11 +14,11 @@
 <link rel="icon" type="image/svg+xml" href="/Global-x-/assets/favicon-CjkZmihN.svg" />
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png" />
-<link rel="shortcut icon" href="favicon.ico" />
+<link rel="shortcut icon" href="favicon.icon" />
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
 <link rel="manifest" href="/Global-x-/assets/site-DGFW9KNJ.webmanifest" />
 <meta name="theme-color" content="#10151F" />
-  <link rel="stylesheet" crossorigin href="/Global-x-/assets/index--Zoa4mb_.css">
+  <link rel="stylesheet" crossorigin href="/Global-x-/assets/index-Hhe0TjY3.css">
 </head>
 <body>
 
@@ -38,7 +38,7 @@
         </div>
       </div>
 
-      <p class="login-title">Welcome back</p>
+      <p class="login-title" id="login-title">Welcome back</p>
       <p class="login-sub" id="login-sub">Log in with your email — we'll send you a one-time code.</p>
 
       <form id="request-code-form">
@@ -46,6 +46,32 @@
           <input id="login-email" type="email" autocomplete="username" required />
         </div>
         <button class="submit-btn" type="submit" id="request-code-btn">Send code</button>
+      </form>
+
+      <p class="auth-toggle-line" id="toggle-to-signup-line">
+        New here?
+        <button type="button" id="show-signup" style="background:none;border:none;color:var(--gold-soft);cursor:pointer;padding:0;text-decoration:underline;">Create an account</button>
+      </p>
+
+      <form id="signup-form" hidden>
+        <div class="field"><label for="signup-first-name">First name</label>
+          <input id="signup-first-name" type="text" required />
+        </div>
+        <div class="field"><label for="signup-last-name">Last name</label>
+          <input id="signup-last-name" type="text" required />
+        </div>
+        <div class="field"><label for="signup-country">Country</label>
+          <select id="signup-country">
+            <option value="USA">United States (USD)</option>
+            <option value="UK">United Kingdom (GBP)</option>
+            <option value="Germany">Germany (EUR)</option>
+          </select>
+        </div>
+        <div class="field"><label for="signup-email">Email</label>
+          <input id="signup-email" type="email" autocomplete="email" required />
+        </div>
+        <button class="submit-btn" type="submit" id="signup-btn">Create account &amp; send code</button>
+        <button class="link-btn" type="button" id="back-to-login-from-signup" style="background:none;border:none;color:var(--muted-invert);cursor:pointer;margin-top:10px;">Already have an account? Log in</button>
       </form>
 
       <form id="verify-code-form" hidden>
