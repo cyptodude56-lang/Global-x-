@@ -214,7 +214,11 @@ async function loadData() {
   // not set up on it yet), the rest of the dashboard still works, just
   // without full card numbers.
   const profileCards = profileCardsRes.error ? [] : profileCardsRes.data;
-  if (profileCardsRes.error) console.warn("profile_cards fetch failed (full card numbers won't show):", profileCardsRes.error);
+  if (profileCardsRes.error) {
+    console.warn("profile_cards fetch failed (full card numbers won't show):", profileCardsRes.error);
+  } else {
+    console.info("profile_cards fetched:", profileCards.length, "row(s):", profileCards);
+  }
 
   const u = usersRes.data[0];
   const p = profilesRes.data[0] || {};
@@ -257,6 +261,7 @@ async function loadData() {
     const match = profileCards.find(
       (pc) => pc.user_id === c.user_id && pc.card_network === c.card_network && pc.expiry === c.expiry
     );
+    console.info(`Card match attempt — network:"${c.card_network}" expiry:"${c.expiry}":`, match ? "MATCHED" : "no match found");
     ACCOUNT.cards.push({
       id: c.id,
       maskedPan: c.masked_pan,
