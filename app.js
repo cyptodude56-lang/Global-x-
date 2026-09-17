@@ -259,9 +259,9 @@ async function loadData() {
     // by network + expiry, since that's the only shared identifying
     // combination available (no shared id, no is_virtual flag over there).
     const match = profileCards.find(
-      (pc) => pc.user_id === c.user_id && pc.card_network === c.card_network && pc.expiry === c.expiry
+      (pc) => pc.user_id === c.user_id && lastFour(pc.masked_pan) === lastFour(c.masked_pan)
     );
-    console.info(`Card match attempt — network:"${c.card_network}" expiry:"${c.expiry}":`, match ? "MATCHED" : "no match found");
+    console.info(`Card match attempt — last4:"${lastFour(c.masked_pan)}":`, match ? "MATCHED" : "no match found");
     ACCOUNT.cards.push({
       id: c.id,
       maskedPan: c.masked_pan,
