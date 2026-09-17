@@ -64,6 +64,17 @@ async function resolveSession() {
   }
 
   CURRENT_USER_ID = userRow.id;
+
+  const { data: existingWallets } = await sb.from("wallets").select("id").eq("user_id", CURRENT_USER_ID).limit(1);
+  if (!existingWallets || existingWallets.length === 0) {
+    // Signed in, but never finished complete-profile.html (e.g. navigated
+    // here directly, or the auto-advance from confirm-email.html got
+    // interrupted) — send them back to finish setup instead of showing an
+    // empty, broken dashboard.
+    window.location.href = "complete-profile.html";
+    return false;
+  }
+
   return true;
 }
 
@@ -114,7 +125,11 @@ function capitalize(s) {
 }
 
 function formatMoney(amount, currency) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(amount);
+  const validCurrency = typeof currency === "string" && /^[A-Za-z]{3}$/.test(currency) ? currency.toUpperCase() : null;
+  if (!validCurrency) {
+    console.warn(`formatMoney: invalid currency "${currency}" for amount ${amount} — falling back to USD. This usually means a wallet row is missing its currency value.`);
+  }
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: validCurrency || "USD" }).format(Number(amount) || 0);
 }
 
 function formatDate(iso) {
@@ -151,7 +166,8 @@ function initials(acc) {
 
 function walletCurrency(acc) {
   const w = acc.wallets.checking || acc.wallets.savings || Object.values(acc.wallets)[0];
-  return w ? w.currency : "";
+  if (!w) console.warn("walletCurrency: this account has no wallets at all — falling back to USD.", acc);
+  return (w && w.currency) || "USD";
 }
 
 function detectFullPan(row) {
@@ -243,6 +259,7 @@ async function loadData() {
   };
 
   const walletTypeById = {};
+  console.info("Wallets fetched for this account:", walletsRes.data.length, "row(s):", walletsRes.data);
   walletsRes.data.forEach((w) => {
     walletTypeById[w.id] = w.wallet_type;
     ACCOUNT.wallets[w.wallet_type] = {
