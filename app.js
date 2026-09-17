@@ -92,18 +92,22 @@ const ICON_PATHS = {
   investments: '<path d="M3 16 8 10l3 3 6-7"/><path d="M3 16.5h14"/>',
   wealth: '<path d="M10 3 3.5 5.5v4c0 4 3 6.7 6.5 7.5 3.5-.8 6.5-3.5 6.5-7.5v-4L10 3Z"/>',
   statements: '<rect x="4" y="2.5" width="12" height="15" rx="1.5"/><path d="M7 6.5h6M7 9.5h6M7 12.5h4"/>',
-  settings: '<circle cx="10" cy="10" r="2.6"/><path d="M10 3v2M10 15v2M3 10h2M15 10h2M5.3 5.3l1.4 1.4M13.3 13.3l1.4 1.4M14.7 5.3l-1.4 1.4M6.7 13.3l-1.4 1.4"/>',
+  settings:
+    '<circle cx="10" cy="10" r="4.3"/><circle cx="10" cy="10" r="1.9"/><rect x="8.9" y="3.1" width="2.2" height="2.4" rx="0.4" transform="rotate(0 10 10)"/><rect x="8.9" y="3.1" width="2.2" height="2.4" rx="0.4" transform="rotate(45 10 10)"/><rect x="8.9" y="3.1" width="2.2" height="2.4" rx="0.4" transform="rotate(90 10 10)"/><rect x="8.9" y="3.1" width="2.2" height="2.4" rx="0.4" transform="rotate(135 10 10)"/><rect x="8.9" y="3.1" width="2.2" height="2.4" rx="0.4" transform="rotate(180 10 10)"/><rect x="8.9" y="3.1" width="2.2" height="2.4" rx="0.4" transform="rotate(225 10 10)"/><rect x="8.9" y="3.1" width="2.2" height="2.4" rx="0.4" transform="rotate(270 10 10)"/><rect x="8.9" y="3.1" width="2.2" height="2.4" rx="0.4" transform="rotate(315 10 10)"/>',
   search: '<circle cx="9" cy="9" r="5.5"/><path d="M17 17l-4-4"/>',
   bell: '<path d="M5 8a5 5 0 0 1 10 0c0 4 1.5 5 1.5 5h-13S5 12 5 8Z"/><path d="M8.3 15.5a1.8 1.8 0 0 0 3.4 0"/>',
   eye: '<path d="M2 10s3-5.5 8-5.5S18 10 18 10s-3 5.5-8 5.5S2 10 2 10Z"/><circle cx="10" cy="10" r="2.3"/>',
   eyeOff:
     '<path d="M3 3l14 14M6.1 6.4C4 7.7 2 10 2 10s3 5.5 8 5.5c1.4 0 2.7-.3 3.8-.9M9.1 4.6c.3 0 .6-.1.9-.1 5 0 8 5.5 8 5.5s-.6 1.2-1.8 2.5"/><path d="M8.2 11.7A2.3 2.3 0 0 1 10 7.7"/>',
   chevron: '<path d="M7.5 4.5 13 10l-5.5 5.5"/>',
+  logout: '<path d="M8 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/><path d="M9 10h8M14 6l3 4-3 4"/>',
   deposit: '<path d="M10 3v10M6 9l4 4 4-4"/><path d="M3 16h14"/>',
   arrowDown: '<path d="M10 4v11M6 11l4 4 4-4"/>',
   arrowUp: '<path d="M10 16V5M6 9l4-4 4 4"/>',
   clock: '<circle cx="10" cy="10" r="7"/><path d="M10 6.5V10l2.5 1.5"/>',
   savings: '<path d="M4.5 11.5c0-3.2 2.6-5.2 5.7-5.2 2.1 0 3.9 1 4.8 2.5.9.1 1.5.9 1.5 1.7s-.8 1.4-1.6 1.4v1.6a1 1 0 0 1-1 1h-1v1.5h-2V15h-2.4v1.5h-2V15c-1.2-.3-2-1.5-2-1.5Z"/><circle cx="13.6" cy="9.3" r=".6" fill="currentColor" stroke="none"/>',
+  hamburger: '<path d="M3 6h14M3 10h14M3 14h14"/>',
+  close: '<path d="M5 5l10 10M15 5L5 15"/>',
 };
 
 function icon(name, size = 18) {
@@ -415,7 +419,16 @@ function renderLedger() {
   const list = el("ledger-list");
   list.innerHTML = "";
   if (ACCOUNT.history.length === 0) {
-    list.innerHTML = '<p class="helper-text">No transactions yet.</p>';
+    list.innerHTML = `
+      <div class="tx-empty">
+        <span class="tx-empty-icon">${icon("deposit")}</span>
+        <p class="tx-empty-title">No transactions yet</p>
+        <p class="tx-empty-sub">Add money to your account to see your activity show up here.</p>
+        <button class="ghost-btn" id="tx-empty-add" type="button">Add money</button>
+      </div>
+    `;
+    const addBtn = document.getElementById("tx-empty-add");
+    if (addBtn) addBtn.addEventListener("click", () => openModal("add"));
     state.highlightIds = [];
     return;
   }
@@ -1008,16 +1021,48 @@ async function init() {
     const dd = el("notif-dropdown");
     dd.hidden = !dd.hidden;
   });
-  document.addEventListener("click", (e) => {
-    const dd = el("notif-dropdown");
-    if (!dd.hidden && !dd.contains(e.target) && e.target !== el("btn-bell")) dd.hidden = true;
+
+  el("user-menu-btn").addEventListener("click", (e) => {
+    e.stopPropagation();
+    const dd = el("user-dropdown");
+    dd.hidden = !dd.hidden;
+    document.querySelector(".user-menu-chevron").classList.toggle("open", !dd.hidden);
   });
+
+  document.addEventListener("click", (e) => {
+    const notifDd = el("notif-dropdown");
+    if (!notifDd.hidden && !notifDd.contains(e.target) && e.target !== el("btn-bell")) notifDd.hidden = true;
+
+    const userDd = el("user-dropdown");
+    if (!userDd.hidden && !userDd.contains(e.target) && !el("user-menu-btn").contains(e.target)) {
+      userDd.hidden = true;
+      document.querySelector(".user-menu-chevron").classList.remove("open");
+    }
+  });
+
+  function openSidebar() {
+    el("sidebar").classList.add("open");
+    el("sidebar-backdrop").classList.add("show");
+  }
+  function closeSidebar() {
+    el("sidebar").classList.remove("open");
+    el("sidebar-backdrop").classList.remove("show");
+  }
+  el("btn-hamburger").addEventListener("click", openSidebar);
+  el("btn-sidebar-close").addEventListener("click", closeSidebar);
+  el("sidebar-backdrop").addEventListener("click", closeSidebar);
 
   // Sidebar nav: only Dashboard is built. Everything else is an honest
   // "coming soon" rather than a silently-dead button.
   document.querySelectorAll(".nav-item[data-nav]").forEach((btn) => {
-    if (btn.dataset.nav === "dashboard") return;
-    btn.addEventListener("click", () => showToast(`${btn.textContent.trim()} — coming soon in a later phase`));
+    if (btn.dataset.nav === "dashboard") {
+      btn.addEventListener("click", closeSidebar);
+      return;
+    }
+    btn.addEventListener("click", () => {
+      showToast(`${btn.textContent.trim()} — coming soon in a later phase`);
+      closeSidebar();
+    });
   });
 
   document.querySelectorAll("[data-coming-soon]").forEach((elm) => {

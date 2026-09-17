@@ -487,6 +487,66 @@ a { color: inherit; }
 }
 .logout-btn:hover { color: var(--negative); }
 
+.user-menu-wrap { position: relative; }
+
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 10px;
+}
+.user-menu:hover { background: rgba(255, 255, 255, 0.06); }
+
+.user-menu-chevron {
+  color: var(--muted-invert);
+  display: flex;
+  transform: rotate(90deg);
+  transition: transform 0.15s ease;
+}
+.user-menu-chevron.open { transform: rotate(-90deg); }
+
+.user-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 200px;
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+  padding: 6px;
+  z-index: 20;
+}
+.user-dropdown[hidden] { display: none; }
+
+.user-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 9px 10px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: var(--ink);
+  cursor: pointer;
+}
+.user-dropdown-item:hover { background: var(--paper); }
+.user-dropdown-item.danger { color: var(--negative); }
+.user-dropdown-item.danger:hover { background: rgba(214, 72, 63, 0.08); }
+
+.user-dropdown-divider {
+  height: 1px;
+  background: var(--line);
+  margin: 6px 4px;
+}
+
 .avatar {
   border-radius: 50%;
   display: flex;
@@ -510,6 +570,38 @@ a { color: inherit; }
   align-items: start;
 }
 
+.hamburger-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 6px;
+  flex-shrink: 0;
+}
+
+.sidebar-close-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--muted-invert);
+  cursor: pointer;
+  padding: 6px;
+  align-self: flex-end;
+  margin-bottom: 8px;
+}
+
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 45;
+}
+.sidebar-backdrop.show { display: block; }
+
+/* Tablet: icon-only rail, always visible, no toggle needed — there's
+   enough width that a permanently-visible narrow rail works fine. */
 @media (max-width: 1080px) {
   .app-shell { grid-template-columns: 76px 1fr; }
   .sidebar-logo-text, .nav-item span:not(.nav-icon), .sidebar-promo { display: none; }
@@ -519,7 +611,32 @@ a { color: inherit; }
 
 @media (max-width: 880px) {
   .dashboard-columns { grid-template-columns: 1fr; }
+}
+
+/* Phone: the rail is too cramped even icon-only, so the sidebar becomes
+   a full off-canvas drawer, hidden until the hamburger opens it. */
+@media (max-width: 640px) {
+  .app-shell { grid-template-columns: 1fr; }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 240px;
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+  }
+  .sidebar.open { transform: translateX(0); }
+  .sidebar-logo-text, .nav-item span:not(.nav-icon), .sidebar-promo { display: block; }
+  .sidebar-logo { justify-content: flex-start; }
+  .nav-item { justify-content: flex-start; }
+
+  .hamburger-btn { display: inline-flex; }
+  .sidebar-close-btn { display: block; }
   .search-box { display: none; }
+  .dashboard-content { padding: 20px 16px 32px; }
 }
 
 .page-header {
@@ -729,6 +846,35 @@ a { color: inherit; }
   padding: 20px 22px;
 }
 .tx-list { display: flex; flex-direction: column; }
+
+.tx-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 48px 24px;
+  gap: 6px;
+}
+.tx-empty-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.tx-empty-icon svg { width: 20px; height: 20px; }
+.tx-empty-title { font-weight: 600; font-size: 0.95rem; margin: 0; }
+.tx-empty-sub {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: 0 0 14px;
+  max-width: 280px;
+}
+.tx-empty .ghost-btn { flex: none; padding: 9px 20px; }
 .tx-row {
   display: flex;
   align-items: center;
