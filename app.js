@@ -261,11 +261,12 @@ async function loadData() {
     const match = profileCards.find(
       (pc) => pc.user_id === c.user_id && lastFour(pc.masked_pan) === lastFour(c.masked_pan)
     );
-    console.info(`Card match attempt — last4:"${lastFour(c.masked_pan)}":`, match ? "MATCHED" : "no match found");
+    const resolvedFullPan = detectFullPan(c) || (match && match.masked_pan) || null;
+    console.info(`Card ${lastFour(c.masked_pan)} — full number resolved:`, !!resolvedFullPan);
     ACCOUNT.cards.push({
       id: c.id,
       maskedPan: c.masked_pan,
-      fullPan: (match && match.masked_pan) || detectFullPan(c),
+      fullPan: resolvedFullPan,
       expiry: c.expiry,
       holder: c.card_holder_name,
       network: c.card_network,
