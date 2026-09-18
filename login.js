@@ -266,14 +266,14 @@ el("verify-code-form").addEventListener("submit", async (e) => {
   window.location.href = "dashboard.html";
 });
 
-//el("back-to-email").addEventListener("click", () => {
-  //stopCodeTimer();
-  //el("verify-code-form").hidden = true;
-  //el("request-code-form").hidden = false;
-  //el("toggle-to-signup-line").hidden = false;
-  //el("login-title").textContent = "Welcome back";
-  //el("login-sub").textContent = "Log in with your email — we'll send you a one-time code.";
-  //hideFormError();
-//});
+el("back-to-email").addEventListener("click", () => {
+  stopCodeTimer();
+  el("verify-code-form").hidden = true;
+  el("request-code-form").hidden = false;
+  el("toggle-to-signup-line").hidden = false;
+  el("login-title").textContent = "Welcome back";
+  el("login-sub").textContent = "Log in with your email — we'll send you a one-time code.";
+  hideFormError();
+});
 
 init();

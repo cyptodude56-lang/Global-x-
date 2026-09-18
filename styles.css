@@ -195,6 +195,7 @@ a { color: inherit; }
   color: var(--ink);
 }
 .field input:focus, .field select:focus { border-color: var(--gold); }
+.field input:disabled { background: var(--paper); color: var(--muted); cursor: not-allowed; }
 
 .form-error {
   color: var(--negative);
@@ -893,6 +894,67 @@ a { color: inherit; }
   white-space: nowrap;
 }
 .mask-toggle-btn:hover { text-decoration: underline; }
+
+/* Transfers page */
+
+.transfers-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 24px;
+  align-items: start;
+}
+@media (max-width: 960px) {
+  .transfers-grid { grid-template-columns: 1fr; }
+}
+
+.transfer-type-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 16px;
+}
+.transfer-type-btn {
+  flex: 1;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+}
+.transfer-type-btn.active {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+  font-weight: 600;
+}
+.transfer-type-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.secure-note {
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-top: 14px;
+}
+
+.filter-badge {
+  font-size: 0.72rem;
+  background: var(--paper);
+  padding: 5px 12px;
+  border-radius: 999px;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.transfer-form-panel { display: flex; flex-direction: column; }
+.transfer-history-panel { display: flex; flex-direction: column; }
 
 /* Quick actions */
 

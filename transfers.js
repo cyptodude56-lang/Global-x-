@@ -1,13 +1,15 @@
 // ---------------------------------------------------------------------------
-// Hallmark — Accounts page.
+// Hallmark — Transfers page.
 //
-// Same session/session-completeness gate as dashboard.html (see app.js's
-// resolveSession for why). Shows the customer's real checking + savings
-// wallets with their actual account number and the region-appropriate
-// secondary identifier (routing number for USA, sort code for UK,
-// IBAN + BIC for Germany) — not the reference doc's three-different-
-// currencies-per-person layout, since that's not how this system's data
-// is shaped.
+// Same session/session-completeness gate as dashboard.html. Two transfer
+// modes, both using the exact same rules as the dashboard's existing
+// Transfer/Send modals (see app.js) — just surfaced as a full page instead
+// of a modal, with a real (filtered) transaction history alongside it:
+//   - "Between my accounts": moves money checking <-> savings
+//   - "To a saved payee": pays one of the customer's real beneficiaries
+// Like every other interactive action in this project, these mutate an
+// in-memory copy only — nothing is written back to Supabase. See
+// README.md ("Why actions still don't write back to the database").
 // ---------------------------------------------------------------------------
 
 let CURRENT_USER_ID = null;
@@ -49,7 +51,7 @@ async function resolveSession() {
   return true;
 }
 
-// ---- Icons (same small set as app.js) ----
+// ---- Icons (same set as app.js/accounts.js) ----
 
 const ICON_PATHS = {
   dashboard: '<path d="M3 10.5 10 4l7 6.5M5 9.5V16h10V9.5"/>',
@@ -69,10 +71,8 @@ const ICON_PATHS = {
   logout: '<path d="M8 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/><path d="M9 10h8M14 6l3 4-3 4"/>',
   close: '<path d="M5 5l10 10M15 5 5 15"/>',
   hamburger: '<path d="M3 5h14M3 10h14M3 15h14"/>',
-  eye: '<path d="M2 10s3-5.5 8-5.5S18 10 18 10s-3 5.5-8 5.5S2 10 2 10Z"/><circle cx="10" cy="10" r="2.3"/>',
-  eyeOff:
-    '<path d="M3 3l14 14M6.1 6.4C4 7.7 2 10 2 10s3 5.5 8 5.5c1.4 0 2.7-.3 3.8-.9M9.1 4.6c.3 0 .6-.1.9-.1 5 0 8 5.5 8 5.5s-.6 1.2-1.8 2.5"/><path d="M8.2 11.7A2.3 2.3 0 0 1 10 7.7"/>',
-  copy: '<rect x="7" y="7" width="9" height="9" rx="1.5"/><path d="M4.5 13.5H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h8.5a1 1 0 0 1 1 1v.5"/>',
+  arrowDown: '<path d="M10 4v11M6 11l4 4 4-4"/>',
+  arrowUp: '<path d="M10 16V5M6 9l4-4 4 4"/>',
 };
 
 function icon(name, size = 18) {
@@ -94,6 +94,10 @@ function formatMoney(amount, currency) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: validCurrency || "USD" }).format(Number(amount) || 0);
 }
 
+function formatDate(iso) {
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
 function showToast(msg) {
   const t = el("toast");
   t.textContent = msg;
@@ -102,21 +106,7 @@ function showToast(msg) {
   showToast._timer = setTimeout(() => t.classList.remove("show"), 2200);
 }
 
-async function copyToClipboard(text) {
-  try {
-    await navigator.clipboard.writeText(text);
-  } catch {
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand("copy");
-    ta.remove();
-  }
-  showToast("Copied to clipboard");
-}
-
-// ---- Ticker (same as app.js) ----
+// ---- Ticker (same as app.js/accounts.js) ----
 
 const TICKER_PAIRS = [
   ["USD", "GBP"], ["USD", "EUR"], ["GBP", "EUR"],
@@ -146,43 +136,14 @@ async function loadFxTicker() {
 }
 
 // ---------------------------------------------------------------------------
-// Data + rendering
+// Data + state
 // ---------------------------------------------------------------------------
 
+const RELEVANT_TYPES = ["transfer_out", "transfer_in", "payment_out"];
+
 let ACCOUNT = null;
-
-async function loadData() {
-  const filters = (q) => q.eq("environment", "sandbox").eq("user_id", CURRENT_USER_ID);
-
-  const [usersRes, profilesRes, walletsRes, notifRes] = await Promise.all([
-    sb.from("users").select("*").eq("environment", "sandbox").eq("id", CURRENT_USER_ID),
-    filters(sb.from("profiles").select("*")),
-    filters(sb.from("wallets").select("*")),
-    filters(sb.from("notifications").select("*")),
-  ]);
-
-  const failed = [usersRes, profilesRes, walletsRes, notifRes].find((r) => r.error);
-  if (failed) {
-    document.querySelector(".dashboard-content").innerHTML = `<div class="error-box" style="color:var(--ink)">Couldn't load your accounts (${failed.error.message}).</div>`;
-    return;
-  }
-
-  const u = usersRes.data[0];
-  const p = profilesRes.data[0] || {};
-
-  ACCOUNT = {
-    id: u.id,
-    country: u.country,
-    firstName: p.first_name || "Customer",
-    lastName: p.last_name || "",
-    tier: p.tier || "Standard",
-    avatarColor: AVATAR_COLORS[Math.abs(hashCode(u.id)) % AVATAR_COLORS.length],
-    wallets: walletsRes.data,
-    notifications: notifRes.data.map((n) => ({ id: n.id, message: n.message, isRead: n.is_read, date: n.created_at })),
-  };
-
-  renderAll();
-}
+let txCounter = 0;
+const state = { transferType: "internal", highlightIds: [] };
 
 function hashCode(s) {
   let h = 0;
@@ -194,18 +155,87 @@ function initials(acc) {
   return ((acc.firstName[0] || "") + (acc.lastName[0] || "")).toUpperCase();
 }
 
+function newTxId() {
+  txCounter += 1;
+  return "local-" + txCounter;
+}
+
+async function loadData() {
+  const filters = (q) => q.eq("environment", "sandbox").eq("user_id", CURRENT_USER_ID);
+
+  const [usersRes, profilesRes, walletsRes, beneficiariesRes, txRes, notifRes] = await Promise.all([
+    sb.from("users").select("*").eq("environment", "sandbox").eq("id", CURRENT_USER_ID),
+    filters(sb.from("profiles").select("*")),
+    filters(sb.from("wallets").select("*")),
+    filters(sb.from("beneficiaries").select("*")),
+    filters(sb.from("ledger_transactions").select("*")),
+    filters(sb.from("notifications").select("*")),
+  ]);
+
+  const failed = [usersRes, profilesRes, walletsRes, beneficiariesRes, txRes, notifRes].find((r) => r.error);
+  if (failed) {
+    document.querySelector(".dashboard-content").innerHTML = `<div class="error-box" style="color:var(--ink)">Couldn't load your data (${failed.error.message}).</div>`;
+    return;
+  }
+
+  const u = usersRes.data[0];
+  const p = profilesRes.data[0] || {};
+
+  ACCOUNT = {
+    id: u.id,
+    firstName: p.first_name || "Customer",
+    lastName: p.last_name || "",
+    tier: p.tier || "Standard",
+    avatarColor: AVATAR_COLORS[Math.abs(hashCode(u.id)) % AVATAR_COLORS.length],
+    wallets: {},
+    beneficiaries: beneficiariesRes.data.map((b) => ({ id: b.id, name: b.beneficiary_name, bankName: b.bank_name })),
+    notifications: notifRes.data.map((n) => ({ id: n.id, message: n.message, isRead: n.is_read, date: n.created_at })),
+    history: [],
+  };
+
+  walletsRes.data.forEach((w) => {
+    ACCOUNT.wallets[w.wallet_type] = { id: w.id, currency: w.currency, balance: Number(w.current_balance), available: Number(w.available_balance) };
+  });
+
+  const walletTypeById = {};
+  walletsRes.data.forEach((w) => { walletTypeById[w.id] = w.wallet_type; });
+
+  txRes.data
+    .filter((t) => RELEVANT_TYPES.includes(t.transaction_type))
+    .forEach((t) => {
+      const amt = Number(t.amount);
+      ACCOUNT.history.push({
+        id: t.id,
+        label: t.label || capitalize(t.transaction_type),
+        counterparty: t.counterparty,
+        amount: Math.abs(amt),
+        currency: t.currency,
+        sign: amt >= 0 ? "+" : "-",
+        date: formatDate(t.posted_at),
+        rawDate: t.posted_at,
+        status: t.status === "completed" ? "Completed" : capitalize(t.status),
+        ref: t.provider_reference || null,
+        walletLabel: walletTypeById[t.wallet_id] ? capitalize(walletTypeById[t.wallet_id]) : null,
+      });
+    });
+  ACCOUNT.history.sort((a, b) => new Date(b.rawDate) - new Date(a.rawDate));
+
+  renderAll();
+}
+
+// ---------------------------------------------------------------------------
+// Rendering
+// ---------------------------------------------------------------------------
+
 function renderAll() {
   el("user-avatar").textContent = initials(ACCOUNT);
   el("user-avatar").style.background = ACCOUNT.avatarColor;
   el("user-name").textContent = `${ACCOUNT.firstName} ${ACCOUNT.lastName}`;
   el("user-tier").textContent = ACCOUNT.tier;
 
-  const total = ACCOUNT.wallets.reduce((sum, w) => sum + Number(w.current_balance), 0);
-  const homeCurrency = (ACCOUNT.wallets[0] && ACCOUNT.wallets[0].currency) || "USD";
-  el("accounts-total").textContent = formatMoney(total, homeCurrency);
-
   renderNotifications();
-  renderAccountsList();
+  renderForm();
+  renderHistory();
   loadFxTicker();
 }
 
@@ -217,114 +247,88 @@ function renderNotifications() {
 
   const list = el("notif-list");
   list.innerHTML = ACCOUNT.notifications.length
-    ? ACCOUNT.notifications
-        .map((n) => `<div class="notif-row${n.isRead ? "" : " unread"}"><p class="notif-msg">${n.message}</p></div>`)
-        .join("")
+    ? ACCOUNT.notifications.map((n) => `<div class="notif-row${n.isRead ? "" : " unread"}"><p class="notif-msg">${n.message}</p></div>`).join("")
     : '<p class="notif-empty">No notifications.</p>';
 }
 
-const WALLET_LABELS = { checking: "Main Current Account", savings: "Savings Account" };
+function walletOptionsHtml() {
+  return Object.entries(ACCOUNT.wallets)
+    .map(([type, w]) => `<option value="${type}">${capitalize(type)} (${formatMoney(w.balance, w.currency)})</option>`)
+    .join("");
+}
 
-function renderAccountsList() {
-  const host = el("accounts-list");
-  host.innerHTML = "";
+function renderForm() {
+  el("tf-from").innerHTML = walletOptionsHtml();
 
-  ACCOUNT.wallets.forEach((w) => {
-    const card = document.createElement("section");
-    card.className = "side-panel account-detail-card";
+  const hasPayees = ACCOUNT.beneficiaries.length > 0;
+  el("type-payee").disabled = !hasPayees;
+  el("type-payee").title = hasPayees ? "" : "No saved payees yet";
 
-    const acctLast4 = (w.account_number || "").slice(-4) || (w.masked_number || "").replace(/\D/g, "").slice(-4);
-    const acctMaskId = `acct-${w.id}`;
+  if (state.transferType === "internal") {
+    el("tf-to-field").hidden = false;
+    el("tf-payee-field").hidden = true;
+    el("tf-memo-field").hidden = true;
+    updateToAccountNote();
+  } else {
+    el("tf-to-field").hidden = true;
+    el("tf-payee-field").hidden = false;
+    el("tf-memo-field").hidden = false;
+    el("tf-payee").innerHTML = ACCOUNT.beneficiaries.map((b) => `<option value="${b.id}">${b.name} (${b.bankName})</option>`).join("");
+  }
+}
 
-    let secondaryRowHtml = "";
-    if (w.routing_number) {
-      secondaryRowHtml = `
-        <div class="detail-row">
-          <span class="detail-label">Routing number</span>
-          <div class="detail-value-wrap">
-            <span class="detail-value">${w.routing_number}</span>
-            <button class="copy-btn" data-copy="${w.routing_number}" aria-label="Copy routing number"><span data-icon="copy"></span></button>
-          </div>
-        </div>`;
-    } else if (w.sort_code) {
-      secondaryRowHtml = `
-        <div class="detail-row">
-          <span class="detail-label">Sort code</span>
-          <div class="detail-value-wrap">
-            <span class="detail-value">${w.sort_code}</span>
-            <button class="copy-btn" data-copy="${w.sort_code}" aria-label="Copy sort code"><span data-icon="copy"></span></button>
-          </div>
-        </div>`;
-    } else if (w.iban) {
-      secondaryRowHtml = `
-        <div class="detail-row">
-          <span class="detail-label">BIC / SWIFT</span>
-          <div class="detail-value-wrap">
-            <span class="detail-value">${w.bic || "—"}</span>
-            <button class="copy-btn" data-copy="${w.bic || ""}" aria-label="Copy BIC"><span data-icon="copy"></span></button>
-          </div>
-        </div>`;
-    }
+function updateToAccountNote() {
+  const from = el("tf-from").value;
+  const to = Object.keys(ACCOUNT.wallets).find((t) => t !== from);
+  el("tf-to").value = to ? capitalize(to) : "—";
+  el("transfer-form").dataset.to = to || "";
+}
 
-    const ibanRowHtml = w.iban
-      ? `
-        <div class="detail-row">
-          <span class="detail-label">IBAN</span>
-          <div class="detail-value-wrap">
-            <span class="detail-value" id="${acctMaskId}-val">•••• ${w.iban.slice(-4)}</span>
-            <button class="mask-toggle-btn" data-mask-id="${acctMaskId}" data-full="${w.iban}" data-masked="•••• ${w.iban.slice(-4)}">Show</button>
-            <button class="copy-btn" data-copy="${w.iban}" aria-label="Copy IBAN"><span data-icon="copy"></span></button>
-          </div>
-        </div>`
-      : `
-        <div class="detail-row">
-          <span class="detail-label">Account number</span>
-          <div class="detail-value-wrap">
-            <span class="detail-value" id="${acctMaskId}-val">•••• ${acctLast4}</span>
-            ${
-              w.account_number
-                ? `<button class="mask-toggle-btn" data-mask-id="${acctMaskId}" data-full="${w.account_number}" data-masked="•••• ${acctLast4}">Show</button>
-                   <button class="copy-btn" data-copy="${w.account_number}" aria-label="Copy account number"><span data-icon="copy"></span></button>`
-                : `<span class="helper-text" style="margin:0;font-size:0.72rem;">Full number not loaded</span>`
-            }
-          </div>
-        </div>`;
+function renderHistory() {
+  const list = el("transfer-history-list");
+  list.innerHTML = "";
+  if (ACCOUNT.history.length === 0) {
+    list.innerHTML = `
+      <div class="tx-empty">
+        <span class="tx-empty-icon">${icon("transfers")}</span>
+        <p class="tx-empty-title">No transfers yet</p>
+        <p class="tx-empty-sub">Transfers between your accounts or to a saved payee will show up here.</p>
+      </div>`;
+    state.highlightIds = [];
+    return;
+  }
 
-
-    card.innerHTML = `
-      <div class="account-detail-top">
-        <div>
-          <p class="side-panel-title" style="margin-bottom:2px;">${WALLET_LABELS[w.wallet_type] || capitalize(w.wallet_type)}</p>
-          <p class="helper-text" style="margin:0;">${capitalize(w.wallet_type)} · ${w.currency}</p>
-        </div>
-        <p class="account-detail-balance">${formatMoney(w.current_balance, w.currency)}</p>
+  ACCOUNT.history.forEach((t) => {
+    const subtitleParts = [t.counterparty, t.walletLabel, t.ref ? `Ref: ${t.ref}` : null].filter(Boolean);
+    const row = document.createElement("div");
+    row.className = "tx-row" + (state.highlightIds.includes(t.id) ? " tx-enter" : "");
+    row.innerHTML = `
+      <span class="tx-icon ${t.sign === "+" ? "in" : "out"}">${icon(t.sign === "+" ? "arrowDown" : "arrowUp")}</span>
+      <div class="tx-main">
+        <p class="tx-label">${t.label}</p>
+        <p class="tx-sub">${subtitleParts.join(", ")}</p>
       </div>
-      <div class="details">
-        ${ibanRowHtml}
-        ${secondaryRowHtml}
-      </div>
+      <span class="tx-when">${t.date}</span>
+      <span class="tx-amount ${t.sign === "+" ? "in" : "out"}">${t.sign}${formatMoney(t.amount, t.currency)}</span>
+      ${t.status !== "Completed" ? `<span class="tx-status-pill">${t.status}</span>` : ""}
     `;
-    host.appendChild(card);
+    list.appendChild(row);
   });
+  state.highlightIds = [];
+}
 
-  mountIcons(host);
+function addHistory(entry) {
+  ACCOUNT.history.unshift(entry);
+  state.highlightIds.push(entry.id);
+}
 
-  host.querySelectorAll(".copy-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const text = btn.dataset.copy;
-      if (!text) return;
-      copyToClipboard(text);
-    });
-  });
-
-  host.querySelectorAll(".mask-toggle-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const valueEl = document.getElementById(`${btn.dataset.maskId}-val`);
-      const isMasked = valueEl.textContent === btn.dataset.masked;
-      valueEl.textContent = isMasked ? btn.dataset.full : btn.dataset.masked;
-      btn.textContent = isMasked ? "Hide" : "Show";
-    });
-  });
+function showFormError(msg) {
+  const e = el("tf-error");
+  e.textContent = msg;
+  e.hidden = false;
+}
+function hideFormError() {
+  el("tf-error").hidden = true;
 }
 
 // ---------------------------------------------------------------------------
@@ -342,8 +346,7 @@ async function init() {
 
   el("btn-bell").addEventListener("click", (e) => {
     e.stopPropagation();
-    const dd = el("notif-dropdown");
-    dd.hidden = !dd.hidden;
+    el("notif-dropdown").hidden = !el("notif-dropdown").hidden;
   });
 
   el("user-menu-btn").addEventListener("click", (e) => {
@@ -376,13 +379,13 @@ async function init() {
   el("sidebar-backdrop").addEventListener("click", closeSidebar);
 
   document.querySelectorAll(".nav-item[data-nav]").forEach((btn) => {
-    if (btn.dataset.nav === "accounts") return; // already here
+    if (btn.dataset.nav === "transfers") return; // already here
     if (btn.dataset.nav === "dashboard") {
       btn.addEventListener("click", () => (window.location.href = "dashboard.html"));
       return;
     }
-    if (btn.dataset.nav === "transfers") {
-      btn.addEventListener("click", () => (window.location.href = "transfers.html"));
+    if (btn.dataset.nav === "accounts") {
+      btn.addEventListener("click", () => (window.location.href = "accounts.html"));
       return;
     }
     btn.addEventListener("click", () => {
@@ -394,8 +397,80 @@ async function init() {
   document.querySelectorAll("[data-coming-soon]").forEach((elm) => {
     elm.addEventListener("click", () => showToast(`${elm.dataset.comingSoon} — coming soon in a later phase`));
   });
-
   el("btn-explore").addEventListener("click", () => showToast("Explore Opportunities — coming soon in a later phase"));
+
+  el("type-internal").addEventListener("click", () => {
+    state.transferType = "internal";
+    el("type-internal").classList.add("active");
+    el("type-payee").classList.remove("active");
+    hideFormError();
+    renderForm();
+  });
+  el("type-payee").addEventListener("click", () => {
+    if (el("type-payee").disabled) return;
+    state.transferType = "payee";
+    el("type-payee").classList.add("active");
+    el("type-internal").classList.remove("active");
+    hideFormError();
+    renderForm();
+  });
+  el("tf-from").addEventListener("change", () => {
+    if (state.transferType === "internal") updateToAccountNote();
+  });
+
+  el("transfer-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    hideFormError();
+    const amount = parseFloat(el("tf-amount").value);
+    if (!amount || amount <= 0) {
+      showFormError("Enter an amount greater than zero.");
+      return;
+    }
+
+    const fromType = el("tf-from").value;
+    const fromWallet = ACCOUNT.wallets[fromType];
+
+    if (state.transferType === "internal") {
+      const toType = el("transfer-form").dataset.to;
+      if (!toType) {
+        showFormError("Add a second account to transfer between.");
+        return;
+      }
+      const toWallet = ACCOUNT.wallets[toType];
+      if (fromWallet.balance < amount) {
+        showFormError(`Not enough ${fromWallet.currency} balance in ${fromType}.`);
+        return;
+      }
+      fromWallet.balance -= amount;
+      fromWallet.available -= amount;
+      toWallet.balance += amount;
+      toWallet.available += amount;
+      addHistory({ id: newTxId(), label: "Internal transfer", counterparty: `To ${capitalize(toType)}`, amount, currency: fromWallet.currency, sign: "-", date: "Just now", status: "Completed", ref: null, walletLabel: capitalize(fromType) });
+      addHistory({ id: newTxId(), label: "Internal transfer", counterparty: `From ${capitalize(fromType)}`, amount, currency: toWallet.currency, sign: "+", date: "Just now", status: "Completed", ref: null, walletLabel: capitalize(toType) });
+      showToast("Transfer complete");
+    } else {
+      const benId = el("tf-payee").value;
+      const ben = ACCOUNT.beneficiaries.find((b) => b.id === benId);
+      if (!ben) {
+        showFormError("Choose a payee.");
+        return;
+      }
+      if (fromWallet.balance < amount) {
+        showFormError(`Not enough ${fromWallet.currency} balance in ${fromType}.`);
+        return;
+      }
+      const memo = el("tf-memo").value.trim();
+      fromWallet.balance -= amount;
+      fromWallet.available -= amount;
+      addHistory({ id: newTxId(), label: "Sent to beneficiary", counterparty: memo ? `${ben.name} — ${memo}` : ben.name, amount, currency: fromWallet.currency, sign: "-", date: "Just now", status: "Completed", ref: null, walletLabel: capitalize(fromType) });
+      showToast(`Sent to ${ben.name}`);
+    }
+
+    el("tf-amount").value = "";
+    if (el("tf-memo")) el("tf-memo").value = "";
+    renderForm();
+    renderHistory();
+  });
 
   const ok = await resolveSession();
   if (!ok) return;
