@@ -956,6 +956,57 @@ a { color: inherit; }
 .transfer-form-panel { display: flex; flex-direction: column; }
 .transfer-history-panel { display: flex; flex-direction: column; }
 
+/* Payments page */
+
+.pay-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--paper);
+  padding: 6px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+.pay-tab {
+  background: none;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  flex: 0 1 auto;
+}
+.pay-tab:hover { color: var(--ink); }
+.pay-tab.active {
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.pay-panel[hidden] { display: none; }
+.pay-form { display: flex; flex-direction: column; }
+
+.card-info-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+.card-info-item {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  flex: 1;
+  min-width: 120px;
+}
+.card-info-label { font-size: 0.72rem; color: var(--muted); margin: 0 0 4px; }
+.card-info-value { font-size: 1rem; font-weight: 600; margin: 0; font-family: var(--font-mono); }
+
 /* Quick actions */
 
 .quick-actions-row {

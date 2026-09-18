@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hallmark Financial Bank — Payments</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap"
+  rel="stylesheet"
+/>
+<link rel="stylesheet" href="styles.css" />
+
+<link rel="icon" type="image/svg+xml" href="favicon.svg" />
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png" />
+<link rel="shortcut icon" href="favicon.ico" />
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+<link rel="manifest" href="site.webmanifest" />
+<meta name="theme-color" content="#10151F" />
+</head>
+<body>
+
+  <div class="fx-ticker" id="fx-ticker">
+    <div class="fx-ticker-track" id="fx-ticker-track">
+      <span class="fx-ticker-item">Loading exchange rates…</span>
+    </div>
+  </div>
+
+  <div class="app-shell">
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+    <aside class="sidebar" id="sidebar">
+      <button class="sidebar-close-btn" id="btn-sidebar-close" type="button" aria-label="Close menu">
+        <span data-icon="close"></span>
+      </button>
+      <div class="sidebar-logo">
+        <img src="icon-512.png" alt="" />
+        <div class="sidebar-logo-text">
+          <p class="sidebar-logo-name">Hallmark</p>
+          <p class="sidebar-logo-sub">FINANCIAL BANK</p>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav" id="sidebar-nav">
+        <button class="nav-item" data-nav="dashboard" type="button"><span class="nav-icon" data-icon="dashboard"></span><span>Dashboard</span></button>
+        <button class="nav-item" data-nav="accounts" type="button"><span class="nav-icon" data-icon="accounts"></span><span>Accounts</span></button>
+        <button class="nav-item" data-nav="transfers" type="button"><span class="nav-icon" data-icon="transfers"></span><span>Transfers</span></button>
+        <button class="nav-item active" data-nav="payments" type="button"><span class="nav-icon" data-icon="payments"></span><span>Payments</span></button>
+        <button class="nav-item" data-nav="cards" type="button"><span class="nav-icon" data-icon="cards"></span><span>Cards</span></button>
+        <button class="nav-item" data-nav="loans" type="button"><span class="nav-icon" data-icon="loans"></span><span>Loans</span></button>
+        <button class="nav-item" data-nav="investments" type="button"><span class="nav-icon" data-icon="investments"></span><span>Investments</span></button>
+        <button class="nav-item" data-nav="wealth" type="button"><span class="nav-icon" data-icon="wealth"></span><span>Wealth Management</span></button>
+        <button class="nav-item" data-nav="statements" type="button"><span class="nav-icon" data-icon="statements"></span><span>Statements</span></button>
+        <button class="nav-item" data-nav="settings" type="button"><span class="nav-icon" data-icon="settings"></span><span>Settings</span></button>
+      </nav>
+
+      <div class="sidebar-promo">
+        <p class="sidebar-promo-title">Build your financial future with Hallmark</p>
+        <p class="sidebar-promo-text">Personalized banking. Smarter wealth. Greater possibilities.</p>
+        <button class="sidebar-promo-btn" id="btn-explore" type="button">Explore Opportunities</button>
+      </div>
+    </aside>
+
+    <div class="main-shell">
+      <header class="topbar-dark">
+        <button class="hamburger-btn" id="btn-hamburger" type="button" aria-label="Open menu">
+          <span data-icon="hamburger"></span>
+        </button>
+        <div class="search-box">
+          <span class="nav-icon" data-icon="search"></span>
+          <input type="text" placeholder="Search transactions, payees, or services…" />
+        </div>
+
+        <div class="topbar-actions">
+          <div class="bell-wrap">
+            <button class="bell-btn" id="btn-bell" type="button" aria-label="Notifications">
+              <span class="nav-icon" data-icon="bell"></span>
+              <span class="bell-badge" id="bell-badge" hidden></span>
+            </button>
+            <div class="notif-dropdown" id="notif-dropdown" hidden>
+              <p class="notif-dropdown-title">Notifications</p>
+              <div class="notif-list" id="notif-list"></div>
+            </div>
+          </div>
+
+          <div class="user-menu-wrap">
+            <button class="user-menu" id="user-menu-btn" type="button" aria-haspopup="true" aria-expanded="false">
+              <span id="user-avatar" class="avatar"></span>
+              <div class="user-name-block">
+                <p id="user-name" class="user-name"></p>
+                <p id="user-tier" class="user-tier"></p>
+              </div>
+              <span class="user-menu-chevron" data-icon="chevron"></span>
+            </button>
+            <div class="user-dropdown" id="user-dropdown" hidden>
+              <button class="user-dropdown-item" type="button" data-coming-soon="Profile">
+                <span data-icon="accounts"></span> Profile
+              </button>
+              <button class="user-dropdown-item" type="button" data-coming-soon="Settings">
+                <span data-icon="settings"></span> Settings
+              </button>
+              <div class="user-dropdown-divider"></div>
+              <button class="user-dropdown-item danger" type="button" id="btn-logout">
+                <span data-icon="logout"></span> Log out
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="dashboard-content">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Payments</h1>
+            <p class="page-subtitle">Pay a saved payee at Hallmark, at another bank, or manage your card.</p>
+          </div>
+        </div>
+
+        <nav class="pay-tabs" role="tablist">
+          <button class="pay-tab active" data-tab="within-bank" type="button" role="tab" aria-selected="true">Within the bank</button>
+          <button class="pay-tab" data-tab="other-bank" type="button" role="tab" aria-selected="false">Other banks</button>
+          <button class="pay-tab" data-tab="cards" type="button" role="tab" aria-selected="false">Debit / Virtual cards</button>
+        </nav>
+
+        <!-- TAB: within the bank -->
+        <div class="pay-panel active" id="panel-within-bank">
+          <div class="transfers-grid">
+            <section class="side-panel transfer-form-panel">
+              <p class="side-panel-title">Pay someone at Hallmark</p>
+              <form id="within-form" class="pay-form" data-bank="Sandbox Clearing House">
+                <div class="field"><label for="wb-from">From account</label><select id="wb-from"></select></div>
+                <div class="field"><label for="wb-payee">Payee</label><select id="wb-payee"></select></div>
+                <div class="field"><label for="wb-amount">Amount</label><input id="wb-amount" type="number" min="0.01" step="0.01" placeholder="0.00" required /></div>
+                <div class="field"><label for="wb-memo">Memo (optional)</label><input id="wb-memo" type="text" placeholder="e.g. Shared expenses" /></div>
+                <p class="form-error" id="wb-error" hidden></p>
+                <button class="submit-btn" type="submit">Send payment</button>
+                <p class="secure-note">Payments within Hallmark are instant</p>
+              </form>
+            </section>
+            <section class="side-panel transfer-history-panel">
+              <div class="section-header"><p class="section-title">Recent Payments</p><span class="filter-badge">This month</span></div>
+              <div class="tx-list" id="payments-history-list"></div>
+            </section>
+          </div>
+        </div>
+
+        <!-- TAB: other banks -->
+        <div class="pay-panel" id="panel-other-bank" hidden>
+          <div class="transfers-grid">
+            <section class="side-panel transfer-form-panel">
+              <p class="side-panel-title">Pay someone at another bank</p>
+              <form id="other-form" class="pay-form" data-bank="Mock Partner Bank">
+                <div class="field"><label for="ob-from">From account</label><select id="ob-from"></select></div>
+                <div class="field"><label for="ob-payee">Payee</label><select id="ob-payee"></select></div>
+                <div class="field"><label for="ob-amount">Amount</label><input id="ob-amount" type="number" min="0.01" step="0.01" placeholder="0.00" required /></div>
+                <div class="field"><label for="ob-memo">Memo (optional)</label><input id="ob-memo" type="text" placeholder="e.g. Invoice payment" /></div>
+                <p class="form-error" id="ob-error" hidden></p>
+                <button class="submit-btn" type="submit">Send payment</button>
+                <p class="secure-note">External payments may take 1–3 business days</p>
+              </form>
+            </section>
+            <section class="side-panel transfer-history-panel">
+              <div class="section-header"><p class="section-title">Recent Payments</p><span class="filter-badge">This month</span></div>
+              <div class="tx-list" id="payments-history-list-2"></div>
+            </section>
+          </div>
+        </div>
+
+        <!-- TAB: cards -->
+        <div class="pay-panel" id="panel-cards" hidden>
+          <div class="transfers-grid">
+            <section class="side-panel transfer-form-panel">
+              <p class="side-panel-title">Your card</p>
+              <div class="card-tabs" id="card-tabs"></div>
+              <div id="virtual-card" class="debit-card-visual"></div>
+              <div class="card-actions">
+                <button id="btn-reveal" class="ghost-btn" type="button"></button>
+                <button id="btn-freeze" class="ghost-btn" type="button"></button>
+              </div>
+              <div class="card-info-row">
+                <div class="card-info-item"><p class="card-info-label">Linked account</p><p class="card-info-value" id="card-linked-account"></p></div>
+                <div class="card-info-item"><p class="card-info-label">Balance</p><p class="card-info-value" id="card-linked-balance"></p></div>
+              </div>
+            </section>
+            <section class="side-panel transfer-history-panel">
+              <div class="section-header"><p class="section-title">Card-linked Activity</p><span class="filter-badge">Recent</span></div>
+              <div class="tx-list" id="card-history-list"></div>
+            </section>
+          </div>
+        </div>
+      </main>
+
+      <footer class="app-footer">
+        <span>HALLMARK FINANCIAL BANK &nbsp;&nbsp;Secure | Reliable | Global</span>
+        <span>Need help? Contact our 24/7 support</span>
+      </footer>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="payments.js"></script>
+</body>
+</html>
