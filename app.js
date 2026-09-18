@@ -1052,11 +1052,15 @@ async function init() {
   el("btn-sidebar-close").addEventListener("click", closeSidebar);
   el("sidebar-backdrop").addEventListener("click", closeSidebar);
 
-  // Sidebar nav: only Dashboard is built. Everything else is an honest
-  // "coming soon" rather than a silently-dead button.
+  // Sidebar nav: Dashboard and Accounts are built. Everything else is an
+  // honest "coming soon" rather than a silently-dead button.
   document.querySelectorAll(".nav-item[data-nav]").forEach((btn) => {
     if (btn.dataset.nav === "dashboard") {
       btn.addEventListener("click", closeSidebar);
+      return;
+    }
+    if (btn.dataset.nav === "accounts") {
+      btn.addEventListener("click", () => (window.location.href = "accounts.html"));
       return;
     }
     btn.addEventListener("click", () => {

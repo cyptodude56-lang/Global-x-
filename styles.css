@@ -804,6 +804,96 @@ a { color: inherit; }
 }
 .account-withdraw-link:hover { opacity: 1; }
 
+/* Accounts detail page */
+
+.accounts-detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.account-detail-card { display: flex; flex-direction: column; }
+
+.account-detail-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+
+.account-detail-balance {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 1.3rem;
+  white-space: nowrap;
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.detail-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--paper);
+  border-radius: 10px;
+  padding: 11px 14px;
+  gap: 10px;
+}
+
+.detail-label {
+  font-size: 0.78rem;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.detail-value-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.detail-value {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.copy-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.copy-btn:hover { color: var(--gold-dark); background: rgba(201, 162, 39, 0.1); }
+
+.mask-toggle-btn {
+  background: none;
+  border: none;
+  color: var(--gold-dark);
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 4px 6px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.mask-toggle-btn:hover { text-decoration: underline; }
+
 /* Quick actions */
 
 .quick-actions-row {
