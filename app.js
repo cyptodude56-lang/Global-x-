@@ -213,6 +213,17 @@ function showToast(msg) {
 // Data loading
 // ---------------------------------------------------------------------------
 
+function isNotificationVisible(createdAt) {
+  const ageMs = Date.now() - new Date(createdAt).getTime();
+  return ageMs <= 48 * 60 * 60 * 1000;
+}
+
+function pushNotificationIfVisible(n) {
+  if (!isNotificationVisible(n.created_at || n.date)) return false;
+  ACCOUNT.notifications.push({ id: n.id, type: n.type, message: n.message, isRead: n.is_read, date: n.created_at || n.date });
+  return true;
+}
+
 async function loadData() {
   if (!sb) {
     document.querySelector(".dashboard-content").innerHTML = `<div class="error-box" style="color:var(--ink)">Supabase isn't configured yet. Open <code>supabase-config.js</code> and fill in your project URL and anon key — see README.md.</div>`;
@@ -331,7 +342,7 @@ async function loadData() {
   ACCOUNT.history.sort((a, b) => new Date(b.rawDate) - new Date(a.rawDate));
 
   notifRes.data.forEach((n) => {
-    ACCOUNT.notifications.push({ id: n.id, type: n.type, message: n.message, isRead: n.is_read, date: n.created_at });
+    pushNotificationIfVisible(n);
   });
   ACCOUNT.notifications.sort((a, b) => new Date(b.date) - new Date(a.date));
 
@@ -1102,6 +1113,22 @@ async function init() {
   const ok = await resolveSession();
   if (!ok) return;
   loadData();
+  subscribeToNotifications();
+}
+
+function subscribeToNotifications() {
+  sb.channel("notifications-" + CURRENT_USER_ID)
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${CURRENT_USER_ID}` },
+      (payload) => {
+        if (pushNotificationIfVisible(payload.new)) {
+          ACCOUNT.notifications.sort((a, b) => new Date(b.date) - new Date(a.date));
+          renderNotifications();
+        }
+      }
+    )
+    .subscribe();
 }
 
 init();

@@ -109,6 +109,11 @@ function formatPan(raw) {
   if (digits.length < 12) return raw;
   return digits.replace(/(.{4})/g, "$1 ").trim();
 }
+function isNotificationVisible(createdAt) {
+  const ageMs = Date.now() - new Date(createdAt).getTime();
+  return ageMs <= 48 * 60 * 60 * 1000;
+}
+
 function hashCode(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return h; }
 function fakeCvv(cardId) { return String(100 + (Math.abs(hashCode(String(cardId))) % 900)); }
 function randomDigits(n) { let s = ""; for (let i = 0; i < n; i++) s += Math.floor(Math.random() * 10); return s; }
@@ -178,7 +183,9 @@ async function loadData() {
       frozen: c.status === "frozen",
       revealed: false,
     })),
-    notifications: notifRes.data.map((n) => ({ id: n.id, message: n.message, isRead: n.is_read, date: n.created_at })),
+    notifications: notifRes.data
+      .filter((n) => isNotificationVisible(n.created_at))
+      .map((n) => ({ id: n.id, message: n.message, isRead: n.is_read, date: n.created_at })),
   };
 
   renderAll();
@@ -435,6 +442,22 @@ async function init() {
   const ok = await resolveSession();
   if (!ok) return;
   loadData();
+  subscribeToNotifications();
+}
+
+function subscribeToNotifications() {
+  sb.channel("notifications-" + CURRENT_USER_ID)
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${CURRENT_USER_ID}` },
+      (payload) => {
+        const n = payload.new;
+        if (!isNotificationVisible(n.created_at)) return;
+        ACCOUNT.notifications.unshift({ id: n.id, message: n.message, isRead: n.is_read, date: n.created_at });
+        renderNotifications();
+      }
+    )
+    .subscribe();
 }
 
 init();

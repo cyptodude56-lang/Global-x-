@@ -185,10 +185,17 @@ async function loadData() {
     tier: p.tier || "Standard",
     avatarColor: AVATAR_COLORS[Math.abs(hashCode(u.id)) % AVATAR_COLORS.length],
     wallets: walletsRes.data,
-    notifications: notifRes.data.map((n) => ({ id: n.id, message: n.message, isRead: n.is_read, date: n.created_at })),
+    notifications: notifRes.data
+      .filter((n) => isNotificationVisible(n.created_at))
+      .map((n) => ({ id: n.id, message: n.message, isRead: n.is_read, date: n.created_at })),
   };
 
   renderAll();
+}
+
+function isNotificationVisible(createdAt) {
+  const ageMs = Date.now() - new Date(createdAt).getTime();
+  return ageMs <= 48 * 60 * 60 * 1000;
 }
 
 function hashCode(s) {
@@ -419,6 +426,22 @@ async function init() {
   const ok = await resolveSession();
   if (!ok) return;
   loadData();
+  subscribeToNotifications();
+}
+
+function subscribeToNotifications() {
+  sb.channel("notifications-" + CURRENT_USER_ID)
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${CURRENT_USER_ID}` },
+      (payload) => {
+        const n = payload.new;
+        if (!isNotificationVisible(n.created_at)) return;
+        ACCOUNT.notifications.unshift({ id: n.id, message: n.message, isRead: n.is_read, date: n.created_at });
+        renderNotifications();
+      }
+    )
+    .subscribe();
 }
 
 init();

@@ -125,6 +125,11 @@ async function loadFxTicker() {
 let ACCOUNT = null;
 let originalEmail = null;
 
+function isNotificationVisible(createdAt) {
+  const ageMs = Date.now() - new Date(createdAt).getTime();
+  return ageMs <= 48 * 60 * 60 * 1000;
+}
+
 function hashCode(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return h; }
 function initials(acc) { return ((acc.firstName[0] || "") + (acc.lastName[0] || "")).toUpperCase(); }
 
@@ -164,7 +169,9 @@ async function loadData() {
     avatarColor: AVATAR_COLORS[Math.abs(hashCode(u.id)) % AVATAR_COLORS.length],
     wallets: {},
     beneficiaries: beneficiariesRes.data.map((b) => ({ id: b.id, name: b.beneficiary_name, bankName: b.bank_name })),
-    notifications: notifRes.data.map((n) => ({ id: n.id, message: n.message, isRead: n.is_read })),
+    notifications: notifRes.data
+      .filter((n) => isNotificationVisible(n.created_at))
+      .map((n) => ({ id: n.id, message: n.message, isRead: n.is_read, date: n.created_at })),
     preferences: {
       notifEmail: prefs.notifEmail !== false,
       notifSms: prefs.notifSms !== false,
@@ -457,6 +464,22 @@ async function init() {
   const ok = await resolveSession();
   if (!ok) return;
   loadData();
+  subscribeToNotifications();
+}
+
+function subscribeToNotifications() {
+  sb.channel("notifications-" + CURRENT_USER_ID)
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${CURRENT_USER_ID}` },
+      (payload) => {
+        const n = payload.new;
+        if (!isNotificationVisible(n.created_at)) return;
+        ACCOUNT.notifications.unshift({ id: n.id, message: n.message, isRead: n.is_read, date: n.created_at });
+        renderNotificationsDropdown();
+      }
+    )
+    .subscribe();
 }
 
 init();
