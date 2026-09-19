@@ -89,9 +89,15 @@ function capitalize(s) {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 }
 
+let SHOW_CENTS = true;
 function formatMoney(amount, currency) {
   const validCurrency = typeof currency === "string" && /^[A-Za-z]{3}$/.test(currency) ? currency.toUpperCase() : null;
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: validCurrency || "USD" }).format(Number(amount) || 0);
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: validCurrency || "USD",
+    minimumFractionDigits: SHOW_CENTS ? 2 : 0,
+    maximumFractionDigits: SHOW_CENTS ? 2 : 0,
+  }).format(Number(amount) || 0);
 }
 
 function formatDate(iso) {
@@ -144,6 +150,7 @@ const RELEVANT_TYPES = ["transfer_out", "transfer_in", "payment_out"];
 let ACCOUNT = null;
 let txCounter = 0;
 const state = { transferType: "internal", highlightIds: [] };
+let DEFAULT_TRANSFER_ACCOUNT = null;
 
 function hashCode(s) {
   let h = 0;
@@ -180,6 +187,8 @@ async function loadData() {
 
   const u = usersRes.data[0];
   const p = profilesRes.data[0] || {};
+  SHOW_CENTS = !(u && u.preferences && u.preferences.showCents === false);
+  DEFAULT_TRANSFER_ACCOUNT = (u && u.preferences && u.preferences.defaultTransferAccount) || null;
 
   ACCOUNT = {
     id: u.id,
@@ -257,8 +266,13 @@ function walletOptionsHtml() {
     .join("");
 }
 
+let defaultAccountApplied = false;
 function renderForm() {
   el("tf-from").innerHTML = walletOptionsHtml();
+  if (!defaultAccountApplied && DEFAULT_TRANSFER_ACCOUNT && ACCOUNT.wallets[DEFAULT_TRANSFER_ACCOUNT]) {
+    el("tf-from").value = DEFAULT_TRANSFER_ACCOUNT;
+    defaultAccountApplied = true;
+  }
 
   const hasPayees = ACCOUNT.beneficiaries.length > 0;
   el("type-payee").disabled = !hasPayees;
@@ -394,6 +408,10 @@ async function init() {
     }
     if (btn.dataset.nav === "cards") {
       btn.addEventListener("click", () => (window.location.href = "cards.html"));
+      return;
+    }
+    if (btn.dataset.nav === "settings") {
+      btn.addEventListener("click", () => (window.location.href = "settings.html"));
       return;
     }
     btn.addEventListener("click", () => {

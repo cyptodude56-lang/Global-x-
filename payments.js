@@ -85,9 +85,15 @@ function mountIcons(root = document) {
   root.querySelectorAll("[data-icon]").forEach((elm) => { elm.innerHTML = icon(elm.dataset.icon); });
 }
 function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+let SHOW_CENTS = true;
 function formatMoney(amount, currency) {
   const validCurrency = typeof currency === "string" && /^[A-Za-z]{3}$/.test(currency) ? currency.toUpperCase() : null;
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: validCurrency || "USD" }).format(Number(amount) || 0);
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: validCurrency || "USD",
+    minimumFractionDigits: SHOW_CENTS ? 2 : 0,
+    maximumFractionDigits: SHOW_CENTS ? 2 : 0,
+  }).format(Number(amount) || 0);
 }
 function formatDate(iso) { return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); }
 function showToast(msg) {
@@ -141,6 +147,8 @@ async function loadFxTicker() {
 let ACCOUNT = null;
 let txCounter = 0;
 const state = { highlightIds: [], activeCardIndex: 0 };
+let DEFAULT_TRANSFER_ACCOUNT = null;
+let defaultAccountApplied = false;
 
 function hashCode(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return h; }
 function initials(acc) { return ((acc.firstName[0] || "") + (acc.lastName[0] || "")).toUpperCase(); }
@@ -167,6 +175,8 @@ async function loadData() {
 
   const u = usersRes.data[0];
   const p = profilesRes.data[0] || {};
+  SHOW_CENTS = !(u && u.preferences && u.preferences.showCents === false);
+  DEFAULT_TRANSFER_ACCOUNT = (u && u.preferences && u.preferences.defaultTransferAccount) || null;
 
   ACCOUNT = {
     id: u.id,
@@ -227,6 +237,7 @@ function renderAll() {
   renderNotifications();
   renderPayForm("wb", "Sandbox Clearing House");
   renderPayForm("ob", "Mock Partner Bank");
+  defaultAccountApplied = true;
   renderPaymentsHistory();
   renderCardTabs();
   renderCard();
@@ -252,6 +263,9 @@ function walletOptionsHtml() {
 
 function renderPayForm(prefix, bankName) {
   el(`${prefix}-from`).innerHTML = walletOptionsHtml();
+  if (!defaultAccountApplied && DEFAULT_TRANSFER_ACCOUNT && ACCOUNT.wallets[DEFAULT_TRANSFER_ACCOUNT]) {
+    el(`${prefix}-from`).value = DEFAULT_TRANSFER_ACCOUNT;
+  }
   const payees = ACCOUNT.beneficiaries.filter((b) => b.bankName === bankName);
   const select = el(`${prefix}-payee`);
   const submitBtn = document.querySelector(`#${prefix === "wb" ? "within" : "other"}-form .submit-btn`);
@@ -449,6 +463,7 @@ async function init() {
     if (btn.dataset.nav === "accounts") { btn.addEventListener("click", () => (window.location.href = "accounts.html")); return; }
     if (btn.dataset.nav === "transfers") { btn.addEventListener("click", () => (window.location.href = "transfers.html")); return; }
     if (btn.dataset.nav === "cards") { btn.addEventListener("click", () => (window.location.href = "cards.html")); return; }
+    if (btn.dataset.nav === "settings") { btn.addEventListener("click", () => (window.location.href = "settings.html")); return; }
     btn.addEventListener("click", () => { showToast(`${btn.textContent.trim()} — coming soon in a later phase`); closeSidebar(); });
   });
   document.querySelectorAll("[data-coming-soon]").forEach((elm) => {

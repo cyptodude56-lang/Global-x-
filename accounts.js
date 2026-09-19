@@ -89,9 +89,15 @@ function capitalize(s) {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 }
 
+let SHOW_CENTS = true;
 function formatMoney(amount, currency) {
   const validCurrency = typeof currency === "string" && /^[A-Za-z]{3}$/.test(currency) ? currency.toUpperCase() : null;
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: validCurrency || "USD" }).format(Number(amount) || 0);
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: validCurrency || "USD",
+    minimumFractionDigits: SHOW_CENTS ? 2 : 0,
+    maximumFractionDigits: SHOW_CENTS ? 2 : 0,
+  }).format(Number(amount) || 0);
 }
 
 function showToast(msg) {
@@ -169,6 +175,7 @@ async function loadData() {
 
   const u = usersRes.data[0];
   const p = profilesRes.data[0] || {};
+  SHOW_CENTS = !(u && u.preferences && u.preferences.showCents === false);
 
   ACCOUNT = {
     id: u.id,
@@ -391,6 +398,10 @@ async function init() {
     }
     if (btn.dataset.nav === "cards") {
       btn.addEventListener("click", () => (window.location.href = "cards.html"));
+      return;
+    }
+    if (btn.dataset.nav === "settings") {
+      btn.addEventListener("click", () => (window.location.href = "settings.html"));
       return;
     }
     btn.addEventListener("click", () => {

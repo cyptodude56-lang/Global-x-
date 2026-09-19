@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hallmark Financial Bank — Settings</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap"
+  rel="stylesheet"
+/>
+<link rel="stylesheet" href="styles.css" />
+
+<link rel="icon" type="image/svg+xml" href="favicon.svg" />
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png" />
+<link rel="shortcut icon" href="favicon.ico" />
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+<link rel="manifest" href="site.webmanifest" />
+<meta name="theme-color" content="#10151F" />
+</head>
+<body>
+
+  <div class="fx-ticker" id="fx-ticker">
+    <div class="fx-ticker-track" id="fx-ticker-track">
+      <span class="fx-ticker-item">Loading exchange rates…</span>
+    </div>
+  </div>
+
+  <div class="app-shell">
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+    <aside class="sidebar" id="sidebar">
+      <button class="sidebar-close-btn" id="btn-sidebar-close" type="button" aria-label="Close menu">
+        <span data-icon="close"></span>
+      </button>
+      <div class="sidebar-logo">
+        <img src="icon-512.png" alt="" />
+        <div class="sidebar-logo-text">
+          <p class="sidebar-logo-name">Hallmark</p>
+          <p class="sidebar-logo-sub">FINANCIAL BANK</p>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav" id="sidebar-nav">
+        <button class="nav-item" data-nav="dashboard" type="button"><span class="nav-icon" data-icon="dashboard"></span><span>Dashboard</span></button>
+        <button class="nav-item" data-nav="accounts" type="button"><span class="nav-icon" data-icon="accounts"></span><span>Accounts</span></button>
+        <button class="nav-item" data-nav="transfers" type="button"><span class="nav-icon" data-icon="transfers"></span><span>Transfers</span></button>
+        <button class="nav-item" data-nav="payments" type="button"><span class="nav-icon" data-icon="payments"></span><span>Payments</span></button>
+        <button class="nav-item" data-nav="cards" type="button"><span class="nav-icon" data-icon="cards"></span><span>Cards</span></button>
+        <button class="nav-item" data-nav="loans" type="button"><span class="nav-icon" data-icon="loans"></span><span>Loans</span></button>
+        <button class="nav-item" data-nav="investments" type="button"><span class="nav-icon" data-icon="investments"></span><span>Investments</span></button>
+        <button class="nav-item" data-nav="wealth" type="button"><span class="nav-icon" data-icon="wealth"></span><span>Wealth Management</span></button>
+        <button class="nav-item" data-nav="statements" type="button"><span class="nav-icon" data-icon="statements"></span><span>Statements</span></button>
+        <button class="nav-item active" data-nav="settings" type="button"><span class="nav-icon" data-icon="settings"></span><span>Settings</span></button>
+      </nav>
+
+      <div class="sidebar-promo">
+        <p class="sidebar-promo-title">Build your financial future with Hallmark</p>
+        <p class="sidebar-promo-text">Personalized banking. Smarter wealth. Greater possibilities.</p>
+        <button class="sidebar-promo-btn" id="btn-explore" type="button">Explore Opportunities</button>
+      </div>
+    </aside>
+
+    <div class="main-shell">
+      <header class="topbar-dark">
+        <button class="hamburger-btn" id="btn-hamburger" type="button" aria-label="Open menu">
+          <span data-icon="hamburger"></span>
+        </button>
+        <div class="search-box">
+          <span class="nav-icon" data-icon="search"></span>
+          <input type="text" placeholder="Search transactions, payees, or services…" />
+        </div>
+
+        <div class="topbar-actions">
+          <div class="bell-wrap">
+            <button class="bell-btn" id="btn-bell" type="button" aria-label="Notifications">
+              <span class="nav-icon" data-icon="bell"></span>
+              <span class="bell-badge" id="bell-badge" hidden></span>
+            </button>
+            <div class="notif-dropdown" id="notif-dropdown" hidden>
+              <p class="notif-dropdown-title">Notifications</p>
+              <div class="notif-list" id="notif-list"></div>
+            </div>
+          </div>
+
+          <div class="user-menu-wrap">
+            <button class="user-menu" id="user-menu-btn" type="button" aria-haspopup="true" aria-expanded="false">
+              <span id="user-avatar" class="avatar"></span>
+              <div class="user-name-block">
+                <p id="user-name" class="user-name"></p>
+                <p id="user-tier" class="user-tier"></p>
+              </div>
+              <span class="user-menu-chevron" data-icon="chevron"></span>
+            </button>
+            <div class="user-dropdown" id="user-dropdown" hidden>
+              <button class="user-dropdown-item" type="button" data-coming-soon="Profile">
+                <span data-icon="accounts"></span> Profile
+              </button>
+              <button class="user-dropdown-item" type="button" data-coming-soon="Settings">
+                <span data-icon="settings"></span> Settings
+              </button>
+              <div class="user-dropdown-divider"></div>
+              <button class="user-dropdown-item danger" type="button" id="btn-logout">
+                <span data-icon="logout"></span> Log out
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="dashboard-content">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Settings</h1>
+            <p class="page-subtitle">Manage your profile, notifications, and payees.</p>
+          </div>
+        </div>
+
+        <div class="settings-layout">
+          <nav class="settings-nav">
+            <button class="settings-nav-link active" data-panel="profile">Profile</button>
+            <button class="settings-nav-link" data-panel="security">Security</button>
+            <button class="settings-nav-link" data-panel="notifications">Notifications</button>
+            <button class="settings-nav-link" data-panel="payees">Linked payees</button>
+            <button class="settings-nav-link" data-panel="preferences">Preferences</button>
+            <button class="settings-nav-link danger" data-panel="danger">Close account</button>
+          </nav>
+
+          <div class="settings-content">
+
+            <!-- PROFILE -->
+            <div class="settings-panel active" id="panel-profile">
+              <p class="panel-heading">Profile information</p>
+              <p class="panel-description">Your personal details on file.</p>
+
+              <div class="setting-card">
+                <div class="setting-card-header"><div><h3>Personal details</h3><p class="sub">Name and contact information</p></div></div>
+                <div class="setting-card-body">
+                  <div class="form-row">
+                    <div class="field"><label for="set-first-name">First name</label><input id="set-first-name" type="text" /></div>
+                    <div class="field"><label for="set-last-name">Last name</label><input id="set-last-name" type="text" /></div>
+                  </div>
+                  <div class="form-row">
+                    <div class="field"><label for="set-email">Email address</label><input id="set-email" type="email" /><span class="hint" id="email-hint">Used to sign in — changing it will require confirming the new address.</span></div>
+                    <div class="field"><label for="set-phone">Phone number</label><input id="set-phone" type="tel" /></div>
+                  </div>
+                  <div class="form-row">
+                    <div class="field"><label for="set-dob">Date of birth</label><input id="set-dob" type="date" /></div>
+                    <div class="field"><label for="set-country">Country</label><input id="set-country" type="text" disabled /><span class="hint">Contact support to change your country — your account currency depends on it.</span></div>
+                  </div>
+                  <div class="form-row">
+                    <div class="field"><label for="set-address">Address</label><input id="set-address" type="text" /></div>
+                    <div class="field"><label for="set-city">City</label><input id="set-city" type="text" /></div>
+                  </div>
+                  <div class="form-row">
+                    <div class="field"><label for="set-postal">Postal code</label><input id="set-postal" type="text" /></div>
+                    <div class="field"></div>
+                  </div>
+                  <p class="form-error" id="profile-error" hidden></p>
+                  <div class="save-bar"><button class="submit-btn" id="btn-save-profile" type="button" style="width:auto;">Save changes</button></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- SECURITY -->
+            <div class="settings-panel" id="panel-security" hidden>
+              <p class="panel-heading">Security</p>
+              <p class="panel-description">How signing in works on this account.</p>
+
+              <div class="setting-card">
+                <div class="setting-card-header"><div><h3>Signing in</h3><p class="sub">Hallmark uses passwordless sign-in</p></div></div>
+                <div class="setting-card-body">
+                  <div class="security-item">
+                    <div class="security-info"><p class="sec-title">One-time email code <span class="status-tag enabled">Active</span></p><p class="sec-desc">You sign in with a 6-digit code sent to your email — there's no password to manage or reset.</p></div>
+                  </div>
+                  <div class="security-item">
+                    <div class="security-info"><p class="sec-title">Email verified <span class="status-tag" id="email-verified-tag">—</span></p><p class="sec-desc" id="email-verified-desc"></p></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="setting-card">
+                <div class="setting-card-header"><div><h3>Two-factor authentication</h3><p class="sub">Coming in a later phase</p></div></div>
+                <div class="setting-card-body">
+                  <div class="security-item"><div class="security-info"><p class="sec-title">Authenticator app</p><p class="sec-desc">Not yet available in this prototype.</p></div><button class="ghost-btn" data-coming-soon="Two-factor authentication" style="flex:none;">Set up</button></div>
+                  <div class="security-item"><div class="security-info"><p class="sec-title">Biometric login</p><p class="sec-desc">Not yet available in this prototype.</p></div><button class="ghost-btn" data-coming-soon="Biometric login" style="flex:none;">Set up</button></div>
+                  <div class="security-item"><div class="security-info"><p class="sec-title">Device and session history</p><p class="sec-desc">Not yet available in this prototype.</p></div><button class="ghost-btn" data-coming-soon="Session history" style="flex:none;">View</button></div>
+                </div>
+              </div>
+
+              <div class="setting-card">
+                <div class="setting-card-header"><div><h3>This device</h3></div></div>
+                <div class="setting-card-body">
+                  <div class="save-bar"><button class="ghost-btn" id="btn-signout-here" type="button" style="flex:none;">Log out of this device</button></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- NOTIFICATIONS -->
+            <div class="settings-panel" id="panel-notifications" hidden>
+              <p class="panel-heading">Notifications</p>
+              <p class="panel-description">Choose how and when Hallmark contacts you. These preferences are saved to your account.</p>
+
+              <div class="setting-card">
+                <div class="setting-card-header"><div><h3>Alert channels</h3></div></div>
+                <div class="setting-card-body">
+                  <div class="toggle-row"><div class="toggle-info"><p class="toggle-title">Email notifications</p><p class="toggle-desc" id="notif-email-desc"></p></div><label class="switch"><input type="checkbox" id="notif-email" /><span class="slider"></span></label></div>
+                  <div class="toggle-row"><div class="toggle-info"><p class="toggle-title">SMS notifications</p><p class="toggle-desc" id="notif-sms-desc"></p></div><label class="switch"><input type="checkbox" id="notif-sms" /><span class="slider"></span></label></div>
+                  <div class="toggle-row"><div class="toggle-info"><p class="toggle-title">Push notifications</p><p class="toggle-desc">Not yet available in this prototype — saved for when it is.</p></div><label class="switch"><input type="checkbox" id="notif-push" /><span class="slider"></span></label></div>
+                </div>
+              </div>
+
+              <div class="setting-card">
+                <div class="setting-card-header"><div><h3>Alert types</h3></div></div>
+                <div class="setting-card-body">
+                  <div class="toggle-row"><div class="toggle-info"><p class="toggle-title">Security alerts</p><p class="toggle-desc">Sign-ins and account changes.</p></div><label class="switch"><input type="checkbox" id="notif-security" /><span class="slider"></span></label></div>
+                  <div class="toggle-row"><div class="toggle-info"><p class="toggle-title">Transaction alerts</p><p class="toggle-desc">Every debit and credit on your accounts.</p></div><label class="switch"><input type="checkbox" id="notif-transactions" /><span class="slider"></span></label></div>
+                  <div class="toggle-row"><div class="toggle-info"><p class="toggle-title">Low balance alerts</p><p class="toggle-desc">When a balance falls below $200.</p></div><label class="switch"><input type="checkbox" id="notif-low-balance" /><span class="slider"></span></label></div>
+                  <div class="toggle-row"><div class="toggle-info"><p class="toggle-title">Marketing and offers</p><p class="toggle-desc">Product updates and promotions.</p></div><label class="switch"><input type="checkbox" id="notif-marketing" /><span class="slider"></span></label></div>
+                </div>
+              </div>
+              <div class="save-bar"><button class="submit-btn" id="btn-save-notifications" type="button" style="width:auto;">Save preferences</button></div>
+            </div>
+
+            <!-- LINKED PAYEES -->
+            <div class="settings-panel" id="panel-payees" hidden>
+              <p class="panel-heading">Linked payees</p>
+              <p class="panel-description">The people and businesses you've saved to send money to.</p>
+
+              <div class="setting-card">
+                <div class="setting-card-header"><div><h3>Saved payees</h3><p class="sub">Used on the Transfers and Payments pages</p></div></div>
+                <div class="setting-card-body" id="payees-list"></div>
+              </div>
+
+              <div class="setting-card">
+                <div class="setting-card-header"><div><h3>Transfer preferences</h3></div></div>
+                <div class="setting-card-body">
+                  <div class="form-row single">
+                    <div class="field"><label for="set-default-account">Default "from" account</label><select id="set-default-account"></select></div>
+                  </div>
+                  <div class="save-bar"><button class="submit-btn" id="btn-save-transfer-prefs" type="button" style="width:auto;">Save preference</button></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- PREFERENCES -->
+            <div class="settings-panel" id="panel-preferences" hidden>
+              <p class="panel-heading">Preferences</p>
+              <p class="panel-description">Display options that apply across the dashboard, accounts, transfers, payments, and cards pages.</p>
+
+              <div class="setting-card">
+                <div class="setting-card-header"><div><h3>Display</h3></div></div>
+                <div class="setting-card-body">
+                  <div class="toggle-row"><div class="toggle-info"><p class="toggle-title">Show cents in balances</p><p class="toggle-desc">When off, balances round to whole amounts everywhere in Hallmark.</p></div><label class="switch"><input type="checkbox" id="pref-show-cents" /><span class="slider"></span></label></div>
+                </div>
+              </div>
+              <div class="save-bar"><button class="submit-btn" id="btn-save-preferences" type="button" style="width:auto;">Save preferences</button></div>
+            </div>
+
+            <!-- DANGER ZONE -->
+            <div class="settings-panel" id="panel-danger" hidden>
+              <p class="panel-heading">Close account</p>
+              <p class="panel-description">Permanently close your Hallmark account. This isn't available yet in this prototype.</p>
+              <div class="danger-zone">
+                <h3>Close Hallmark account</h3>
+                <p>Account closure isn't implemented in this sandbox — it would need to safely handle balances, cards, and scheduled payments first. Reach out to support if you need this.</p>
+                <button class="ghost-btn danger-btn" data-coming-soon="Account closure" type="button" style="flex:none;">Close my account</button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </main>
+
+      <footer class="app-footer">
+        <span>HALLMARK FINANCIAL BANK &nbsp;&nbsp;Secure | Reliable | Global</span>
+        <span>Need help? Contact our 24/7 support</span>
+      </footer>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="settings.js"></script>
+</body>
+</html>

@@ -404,6 +404,7 @@ async function init() {
     if (btn.dataset.nav === "accounts") { btn.addEventListener("click", () => (window.location.href = "accounts.html")); return; }
     if (btn.dataset.nav === "transfers") { btn.addEventListener("click", () => (window.location.href = "transfers.html")); return; }
     if (btn.dataset.nav === "payments") { btn.addEventListener("click", () => (window.location.href = "payments.html")); return; }
+    if (btn.dataset.nav === "settings") { btn.addEventListener("click", () => (window.location.href = "settings.html")); return; }
     btn.addEventListener("click", () => { showToast(`${btn.textContent.trim()} — coming soon in a later phase`); closeSidebar(); });
   });
   document.querySelectorAll("[data-coming-soon]").forEach((elm) => {
