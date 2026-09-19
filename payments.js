@@ -448,6 +448,7 @@ async function init() {
     if (btn.dataset.nav === "dashboard") { btn.addEventListener("click", () => (window.location.href = "dashboard.html")); return; }
     if (btn.dataset.nav === "accounts") { btn.addEventListener("click", () => (window.location.href = "accounts.html")); return; }
     if (btn.dataset.nav === "transfers") { btn.addEventListener("click", () => (window.location.href = "transfers.html")); return; }
+    if (btn.dataset.nav === "cards") { btn.addEventListener("click", () => (window.location.href = "cards.html")); return; }
     btn.addEventListener("click", () => { showToast(`${btn.textContent.trim()} — coming soon in a later phase`); closeSidebar(); });
   });
   document.querySelectorAll("[data-coming-soon]").forEach((elm) => {

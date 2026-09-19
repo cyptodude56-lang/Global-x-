@@ -942,7 +942,7 @@ async function init() {
   });
 
   el("btn-goto-cards").addEventListener("click", () => {
-    el("card-panel").scrollIntoView({ behavior: "smooth", block: "center" });
+    window.location.href = "cards.html";
   });
 
   el("btn-freeze").addEventListener("click", () => {
@@ -1069,6 +1069,10 @@ async function init() {
     }
     if (btn.dataset.nav === "payments") {
       btn.addEventListener("click", () => (window.location.href = "payments.html"));
+      return;
+    }
+    if (btn.dataset.nav === "cards") {
+      btn.addEventListener("click", () => (window.location.href = "cards.html"));
       return;
     }
     btn.addEventListener("click", () => {

@@ -392,6 +392,10 @@ async function init() {
       btn.addEventListener("click", () => (window.location.href = "payments.html"));
       return;
     }
+    if (btn.dataset.nav === "cards") {
+      btn.addEventListener("click", () => (window.location.href = "cards.html"));
+      return;
+    }
     btn.addEventListener("click", () => {
       showToast(`${btn.textContent.trim()} — coming soon in a later phase`);
       closeSidebar();
