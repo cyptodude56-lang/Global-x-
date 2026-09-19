@@ -936,6 +936,17 @@ a { color: inherit; }
   cursor: not-allowed;
 }
 
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin: 2px 0 16px;
+  cursor: pointer;
+}
+.checkbox-row input { width: 16px; height: 16px; accent-color: var(--gold); cursor: pointer; }
+
 .secure-note {
   text-align: center;
   font-size: 0.72rem;

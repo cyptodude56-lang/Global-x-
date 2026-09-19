@@ -94,12 +94,12 @@
               <span class="user-menu-chevron" data-icon="chevron"></span>
             </button>
             <div class="user-dropdown" id="user-dropdown" hidden>
-              <button class="user-dropdown-item" type="button" data-coming-soon="Profile">
+              <a class="user-dropdown-item" href="settings.html#profile">
                 <span data-icon="accounts"></span> Profile
-              </button>
-              <button class="user-dropdown-item" type="button" data-coming-soon="Settings">
+              </a>
+              <a class="user-dropdown-item" href="settings.html#security">
                 <span data-icon="settings"></span> Settings
-              </button>
+              </a>
               <div class="user-dropdown-divider"></div>
               <button class="user-dropdown-item danger" type="button" id="btn-logout">
                 <span data-icon="logout"></span> Log out
@@ -121,6 +121,7 @@
           <button class="pay-tab active" data-tab="within-bank" type="button" role="tab" aria-selected="true">Within the bank</button>
           <button class="pay-tab" data-tab="other-bank" type="button" role="tab" aria-selected="false">Other banks</button>
           <button class="pay-tab" data-tab="cards" type="button" role="tab" aria-selected="false">Debit / Virtual cards</button>
+          <button class="pay-tab" data-tab="payees" type="button" role="tab" aria-selected="false">Linked payees</button>
         </nav>
 
         <!-- TAB: within the bank -->
@@ -130,7 +131,24 @@
               <p class="side-panel-title">Pay someone at Hallmark</p>
               <form id="within-form" class="pay-form" data-bank="Sandbox Clearing House">
                 <div class="field"><label for="wb-from">From account</label><select id="wb-from"></select></div>
-                <div class="field"><label for="wb-payee">Payee</label><select id="wb-payee"></select></div>
+
+                <div class="transfer-type-toggle">
+                  <button type="button" class="transfer-type-btn active" data-form="wb" data-recipient-mode="saved">Saved payee</button>
+                  <button type="button" class="transfer-type-btn" data-form="wb" data-recipient-mode="new">Pay someone new</button>
+                </div>
+
+                <div class="field" id="wb-saved-field"><label for="wb-payee">Payee</label><select id="wb-payee"></select></div>
+
+                <div id="wb-new-fields" hidden>
+                  <div class="field"><label for="wb-new-name">Recipient name</label><input id="wb-new-name" type="text" placeholder="e.g. Jordan Blake" /></div>
+                  <div class="field">
+                    <label for="wb-new-account">Account number</label>
+                    <input id="wb-new-account" type="text" inputmode="numeric" placeholder="10-digit account number" />
+                    <span class="hint" id="wb-lookup-status"></span>
+                  </div>
+                  <label class="checkbox-row"><input type="checkbox" id="wb-save-payee" checked /> Save this payee for next time</label>
+                </div>
+
                 <div class="field"><label for="wb-amount">Amount</label><input id="wb-amount" type="number" min="0.01" step="0.01" placeholder="0.00" required /></div>
                 <div class="field"><label for="wb-memo">Memo (optional)</label><input id="wb-memo" type="text" placeholder="e.g. Shared expenses" /></div>
                 <p class="form-error" id="wb-error" hidden></p>
@@ -152,7 +170,21 @@
               <p class="side-panel-title">Pay someone at another bank</p>
               <form id="other-form" class="pay-form" data-bank="Mock Partner Bank">
                 <div class="field"><label for="ob-from">From account</label><select id="ob-from"></select></div>
-                <div class="field"><label for="ob-payee">Payee</label><select id="ob-payee"></select></div>
+
+                <div class="transfer-type-toggle">
+                  <button type="button" class="transfer-type-btn active" data-form="ob" data-recipient-mode="saved">Saved payee</button>
+                  <button type="button" class="transfer-type-btn" data-form="ob" data-recipient-mode="new">Pay someone new</button>
+                </div>
+
+                <div class="field" id="ob-saved-field"><label for="ob-payee">Payee</label><select id="ob-payee"></select></div>
+
+                <div id="ob-new-fields" hidden>
+                  <div class="field"><label for="ob-new-name">Recipient name</label><input id="ob-new-name" type="text" placeholder="e.g. Acme Corp" /></div>
+                  <div class="field"><label for="ob-new-account">Account number</label><input id="ob-new-account" type="text" inputmode="numeric" placeholder="Account number" /></div>
+                  <div class="field"><label for="ob-new-routing">Routing number</label><input id="ob-new-routing" type="text" inputmode="numeric" placeholder="9-digit routing number" /></div>
+                  <label class="checkbox-row"><input type="checkbox" id="ob-save-payee" checked /> Save this payee for next time</label>
+                </div>
+
                 <div class="field"><label for="ob-amount">Amount</label><input id="ob-amount" type="number" min="0.01" step="0.01" placeholder="0.00" required /></div>
                 <div class="field"><label for="ob-memo">Memo (optional)</label><input id="ob-memo" type="text" placeholder="e.g. Invoice payment" /></div>
                 <p class="form-error" id="ob-error" hidden></p>
@@ -186,6 +218,43 @@
             <section class="side-panel transfer-history-panel">
               <div class="section-header"><p class="section-title">Card-linked Activity</p><span class="filter-badge">Recent</span></div>
               <div class="tx-list" id="card-history-list"></div>
+            </section>
+          </div>
+        </div>
+
+        <!-- TAB: linked payees -->
+        <div class="pay-panel" id="panel-payees" hidden>
+          <div class="transfers-grid">
+            <section class="side-panel transfer-form-panel">
+              <p class="side-panel-title">Add a payee</p>
+              <form id="add-payee-form">
+                <div class="field"><label for="np-name">Payee name</label><input id="np-name" type="text" placeholder="e.g. Jordan Blake" required /></div>
+
+                <div class="transfer-type-toggle">
+                  <button type="button" class="transfer-type-btn active" data-payee-bank="within">Within the bank</button>
+                  <button type="button" class="transfer-type-btn" data-payee-bank="other">Other bank</button>
+                </div>
+
+                <div class="field"><label for="np-account">Account number</label>
+                  <input id="np-account" type="text" inputmode="numeric" placeholder="Account number" required />
+                  <span class="hint" id="np-lookup-status"></span>
+                </div>
+                <div class="field" id="np-routing-field"><label for="np-routing">Routing number</label><input id="np-routing" type="text" inputmode="numeric" placeholder="9-digit routing number" /></div>
+
+                <p class="form-error" id="np-error" hidden></p>
+                <button class="submit-btn" type="button" id="btn-add-payee" style="width:auto;">Add payee</button>
+              </form>
+            </section>
+
+            <section class="side-panel transfer-history-panel">
+              <div class="setting-card-header" style="padding:0 0 14px;border-bottom:none;"><div><h3>Saved payees</h3><p class="sub">Used across Transfers and Payments</p></div></div>
+              <div id="payees-list"></div>
+
+              <div class="setting-card-header" style="padding:20px 0 14px;"><div><h3>Transfer preferences</h3></div></div>
+              <div class="form-row single">
+                <div class="field"><label for="set-default-account">Default "from" account</label><select id="set-default-account"></select></div>
+              </div>
+              <div class="save-bar"><button class="submit-btn" id="btn-save-transfer-prefs" type="button" style="width:auto;">Save preference</button></div>
             </section>
           </div>
         </div>

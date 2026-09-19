@@ -76,6 +76,7 @@ const ICON_PATHS = {
   hamburger: '<path d="M3 5h14M3 10h14M3 15h14"/>',
   arrowDown: '<path d="M10 4v11M6 11l4 4 4-4"/>',
   arrowUp: '<path d="M10 16V5M6 9l4-4 4 4"/>',
+  trash: '<path d="M4.5 6h11M8 6V4.5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1V6M6 6l.6 9.4a1 1 0 0 0 1 1h4.8a1 1 0 0 0 1-1L14 6"/>',
 };
 
 function icon(name, size = 18) {
@@ -149,6 +150,13 @@ let txCounter = 0;
 const state = { highlightIds: [], activeCardIndex: 0 };
 let DEFAULT_TRANSFER_ACCOUNT = null;
 let defaultAccountApplied = false;
+let RAW_PREFERENCES = {};
+const recipientState = {
+  wb: { mode: "saved", lookupOk: false, lookupName: null },
+  ob: { mode: "saved" },
+};
+let addPayeeBankType = "within";
+let addPayeeLookupOk = false;
 
 function isNotificationVisible(createdAt) {
   const ageMs = Date.now() - new Date(createdAt).getTime();
@@ -181,6 +189,7 @@ async function loadData() {
   const u = usersRes.data[0];
   const p = profilesRes.data[0] || {};
   SHOW_CENTS = !(u && u.preferences && u.preferences.showCents === false);
+  RAW_PREFERENCES = (u && u.preferences) || {};
   DEFAULT_TRANSFER_ACCOUNT = (u && u.preferences && u.preferences.defaultTransferAccount) || null;
 
   ACCOUNT = {
@@ -250,6 +259,8 @@ function renderAll() {
   renderCard();
   renderCardLinkedInfo();
   renderCardHistory();
+  renderPayeesList();
+  renderTransferPrefsUI();
   loadFxTicker();
 }
 
@@ -278,11 +289,193 @@ function renderPayForm(prefix, bankName) {
   const submitBtn = document.querySelector(`#${prefix === "wb" ? "within" : "other"}-form .submit-btn`);
   if (payees.length === 0) {
     select.innerHTML = `<option value="">No saved payees at this bank</option>`;
-    submitBtn.disabled = true;
   } else {
     select.innerHTML = payees.map((b) => `<option value="${b.id}">${b.name}</option>`).join("");
-    submitBtn.disabled = false;
   }
+  submitBtn.disabled = recipientState[prefix].mode === "saved" && payees.length === 0;
+}
+
+async function lookupHallmarkAccount(accountNumber) {
+  const { data, error } = await sb.rpc("lookup_hallmark_account", { p_account_number: accountNumber });
+  if (error || !data || !data[0]) return { found: false, holderName: null };
+  return { found: data[0].found, holderName: data[0].holder_name };
+}
+
+function setRecipientMode(prefix, mode, bankName) {
+  recipientState[prefix].mode = mode;
+  document.querySelectorAll(`.transfer-type-btn[data-form="${prefix}"]`).forEach((b) => {
+    b.classList.toggle("active", b.dataset.recipientMode === mode);
+  });
+  el(`${prefix}-saved-field`).hidden = mode !== "saved";
+  el(`${prefix}-new-fields`).hidden = mode !== "new";
+  renderPayForm(prefix, bankName);
+}
+
+function wireRecipientToggle(prefix, bankName) {
+  document.querySelectorAll(`.transfer-type-btn[data-form="${prefix}"]`).forEach((btn) => {
+    btn.addEventListener("click", () => setRecipientMode(prefix, btn.dataset.recipientMode, bankName));
+  });
+}
+
+function wireWbLookup() {
+  let debounceTimer;
+  el("wb-new-account").addEventListener("input", () => {
+    clearTimeout(debounceTimer);
+    const val = el("wb-new-account").value.trim();
+    recipientState.wb.lookupOk = false;
+    recipientState.wb.lookupName = null;
+    if (!val) {
+      el("wb-lookup-status").textContent = "";
+      return;
+    }
+    el("wb-lookup-status").textContent = "Checking…";
+    el("wb-lookup-status").style.color = "var(--muted)";
+    debounceTimer = setTimeout(async () => {
+      const { found, holderName } = await lookupHallmarkAccount(val);
+      if (el("wb-new-account").value.trim() !== val) return; // input changed since; ignore stale response
+      recipientState.wb.lookupOk = found;
+      recipientState.wb.lookupName = holderName;
+      el("wb-lookup-status").textContent = found ? `✓ ${holderName}` : "✗ No Hallmark account found with that number";
+      el("wb-lookup-status").style.color = found ? "var(--positive)" : "var(--negative)";
+    }, 400);
+  });
+}
+
+// ---- Linked payees tab ----
+
+function renderPayeesList() {
+  const list = el("payees-list");
+  if (ACCOUNT.beneficiaries.length === 0) {
+    list.innerHTML = '<p class="helper-text">No saved payees yet — add one below.</p>';
+    return;
+  }
+  list.innerHTML = ACCOUNT.beneficiaries
+    .map(
+      (b) => `
+    <div class="linked-account" data-payee-id="${b.id}">
+      <div class="linked-info">
+        <span class="linked-logo">${b.name.slice(0, 2).toUpperCase()}</span>
+        <div class="linked-details"><p class="linked-name">${b.name}</p><p class="linked-meta">${b.bankName}</p></div>
+      </div>
+      <button class="ghost-btn danger-btn" data-remove-payee="${b.id}" style="flex:none;"><span data-icon="trash"></span> Remove</button>
+    </div>`
+    )
+    .join("");
+  mountIcons(list);
+  list.querySelectorAll("[data-remove-payee]").forEach((btn) => {
+    btn.addEventListener("click", () => removePayee(btn.dataset.removePayee));
+  });
+}
+
+async function removePayee(id) {
+  if (!confirm("Remove this saved payee? You'll need to re-add them to send money to them again.")) return;
+  const { error } = await sb.from("beneficiaries").delete().eq("id", id);
+  if (error) {
+    showToast(`Couldn't remove payee: ${error.message}`);
+    return;
+  }
+  ACCOUNT.beneficiaries = ACCOUNT.beneficiaries.filter((b) => b.id !== id);
+  renderPayeesList();
+  renderPayForm("wb", "Sandbox Clearing House");
+  renderPayForm("ob", "Mock Partner Bank");
+  showToast("Payee removed");
+}
+
+function renderTransferPrefsUI() {
+  const select = el("set-default-account");
+  select.innerHTML = Object.entries(ACCOUNT.wallets)
+    .map(([type, w]) => `<option value="${type}">${capitalize(type)} (${formatMoney(w.balance, w.currency)})</option>`)
+    .join("");
+  if (DEFAULT_TRANSFER_ACCOUNT && ACCOUNT.wallets[DEFAULT_TRANSFER_ACCOUNT]) {
+    select.value = DEFAULT_TRANSFER_ACCOUNT;
+  }
+}
+
+function wireAddPayeeForm() {
+  document.querySelectorAll(".transfer-type-btn[data-payee-bank]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      addPayeeBankType = btn.dataset.payeeBank;
+      document.querySelectorAll(".transfer-type-btn[data-payee-bank]").forEach((b) => b.classList.toggle("active", b === btn));
+      el("np-routing-field").hidden = addPayeeBankType === "within";
+      el("np-lookup-status").textContent = "";
+      addPayeeLookupOk = false;
+    });
+  });
+
+  let debounceTimer;
+  el("np-account").addEventListener("input", () => {
+    if (addPayeeBankType !== "within") return;
+    clearTimeout(debounceTimer);
+    const val = el("np-account").value.trim();
+    addPayeeLookupOk = false;
+    if (!val) {
+      el("np-lookup-status").textContent = "";
+      return;
+    }
+    el("np-lookup-status").textContent = "Checking…";
+    el("np-lookup-status").style.color = "var(--muted)";
+    debounceTimer = setTimeout(async () => {
+      const { found, holderName } = await lookupHallmarkAccount(val);
+      if (el("np-account").value.trim() !== val) return;
+      addPayeeLookupOk = found;
+      el("np-lookup-status").textContent = found ? `✓ ${holderName}` : "✗ No Hallmark account found with that number";
+      el("np-lookup-status").style.color = found ? "var(--positive)" : "var(--negative)";
+    }, 400);
+  });
+
+  el("btn-add-payee").addEventListener("click", async () => {
+    el("np-error").hidden = true;
+    const name = el("np-name").value.trim();
+    const account = el("np-account").value.trim();
+    const routing = el("np-routing").value.trim();
+    const bankName = addPayeeBankType === "within" ? "Sandbox Clearing House" : "Mock Partner Bank";
+
+    if (!name || !account) {
+      el("np-error").textContent = "Enter a name and account number.";
+      el("np-error").hidden = false;
+      return;
+    }
+    if (addPayeeBankType === "within" && !addPayeeLookupOk) {
+      el("np-error").textContent = "That account number doesn't match a Hallmark account.";
+      el("np-error").hidden = false;
+      return;
+    }
+    if (addPayeeBankType === "other" && !routing) {
+      el("np-error").textContent = "Enter the routing number.";
+      el("np-error").hidden = false;
+      return;
+    }
+
+    const { data, error } = await sb
+      .from("beneficiaries")
+      .insert({
+        user_id: ACCOUNT.id,
+        beneficiary_name: name,
+        bank_name: bankName,
+        account_number: account,
+        routing_number: addPayeeBankType === "other" ? routing : null,
+        environment: "sandbox",
+      })
+      .select()
+      .single();
+
+    if (error) {
+      el("np-error").textContent = `Couldn't add payee: ${error.message}`;
+      el("np-error").hidden = false;
+      return;
+    }
+
+    ACCOUNT.beneficiaries.push({ id: data.id, name: data.beneficiary_name, bankName: data.bank_name });
+    el("np-name").value = "";
+    el("np-account").value = "";
+    el("np-routing").value = "";
+    el("np-lookup-status").textContent = "";
+    addPayeeLookupOk = false;
+    showToast("Payee added");
+    renderPayeesList();
+    renderPayForm("wb", "Sandbox Clearing House");
+    renderPayForm("ob", "Mock Partner Bank");
+  });
 }
 
 function renderTxRow(t) {
@@ -395,7 +588,7 @@ function addPaymentHistory(entry) {
 // ---------------------------------------------------------------------------
 
 function wirePayForm(prefix, formId) {
-  el(formId).addEventListener("submit", (e) => {
+  el(formId).addEventListener("submit", async (e) => {
     e.preventDefault();
     el(`${prefix}-error`).hidden = true;
 
@@ -407,32 +600,90 @@ function wirePayForm(prefix, formId) {
     }
     const fromType = el(`${prefix}-from`).value;
     const wallet = ACCOUNT.wallets[fromType];
-    const benId = el(`${prefix}-payee`).value;
-    const bankName = el(formId).dataset.bank;
-    const ben = ACCOUNT.beneficiaries.find((b) => b.id === benId && b.bankName === bankName);
-    if (!ben) {
-      el(`${prefix}-error`).textContent = "Choose a payee.";
-      el(`${prefix}-error`).hidden = false;
-      return;
-    }
     if (wallet.balance < amount) {
       el(`${prefix}-error`).textContent = `Not enough ${wallet.currency} balance in ${fromType}.`;
       el(`${prefix}-error`).hidden = false;
       return;
     }
 
+    const bankName = el(formId).dataset.bank;
+    const mode = recipientState[prefix].mode;
+    let recipientName;
+
+    if (mode === "saved") {
+      const benId = el(`${prefix}-payee`).value;
+      const ben = ACCOUNT.beneficiaries.find((b) => b.id === benId && b.bankName === bankName);
+      if (!ben) {
+        el(`${prefix}-error`).textContent = "Choose a payee.";
+        el(`${prefix}-error`).hidden = false;
+        return;
+      }
+      recipientName = ben.name;
+    } else {
+      recipientName = el(`${prefix}-new-name`).value.trim();
+      const recipientAccountNumber = el(`${prefix}-new-account`).value.trim();
+      if (!recipientName || !recipientAccountNumber) {
+        el(`${prefix}-error`).textContent = "Enter the recipient's name and account number.";
+        el(`${prefix}-error`).hidden = false;
+        return;
+      }
+      let recipientRoutingNumber = null;
+      if (prefix === "wb") {
+        if (!recipientState.wb.lookupOk) {
+          el(`${prefix}-error`).textContent = "That account number doesn't match a Hallmark account.";
+          el(`${prefix}-error`).hidden = false;
+          return;
+        }
+      } else {
+        recipientRoutingNumber = el(`${prefix}-new-routing`).value.trim();
+        if (!recipientRoutingNumber) {
+          el(`${prefix}-error`).textContent = "Enter the recipient's routing number.";
+          el(`${prefix}-error`).hidden = false;
+          return;
+        }
+      }
+
+      if (el(`${prefix}-save-payee`).checked) {
+        const { data: newBen, error: saveErr } = await sb
+          .from("beneficiaries")
+          .insert({
+            user_id: ACCOUNT.id,
+            beneficiary_name: recipientName,
+            bank_name: bankName,
+            account_number: recipientAccountNumber,
+            routing_number: recipientRoutingNumber,
+            environment: "sandbox",
+          })
+          .select()
+          .single();
+        if (!saveErr && newBen) {
+          ACCOUNT.beneficiaries.push({ id: newBen.id, name: newBen.beneficiary_name, bankName: newBen.bank_name });
+        } else if (saveErr) {
+          console.warn("Couldn't save new payee (payment still proceeds):", saveErr);
+        }
+      }
+    }
+
     const memo = el(`${prefix}-memo`).value.trim();
     wallet.balance -= amount;
     wallet.available -= amount;
     addPaymentHistory({
-      id: newTxId(), label: "Payment sent", counterparty: memo ? `${ben.name} — ${memo}` : ben.name,
+      id: newTxId(), label: "Payment sent", counterparty: memo ? `${recipientName} — ${memo}` : recipientName,
       amount, currency: wallet.currency, sign: "-", date: "Just now", status: "Completed", ref: null, walletLabel: capitalize(fromType),
     });
-    showToast(`Sent to ${ben.name}`);
+    showToast(`Sent to ${recipientName}`);
     el(`${prefix}-amount`).value = "";
     el(`${prefix}-memo`).value = "";
+    if (mode === "new") {
+      el(`${prefix}-new-name`).value = "";
+      el(`${prefix}-new-account`).value = "";
+      if (el(`${prefix}-new-routing`)) el(`${prefix}-new-routing`).value = "";
+      if (prefix === "wb") el("wb-lookup-status").textContent = "";
+      setRecipientMode(prefix, "saved", bankName);
+    }
     renderPayForm(prefix, bankName);
     renderPaymentsHistory();
+    renderPayeesList();
   });
 }
 
@@ -480,7 +731,7 @@ async function init() {
 
   // Tabs
   const tabButtons = document.querySelectorAll(".pay-tab");
-  const panels = { "within-bank": el("panel-within-bank"), "other-bank": el("panel-other-bank"), cards: el("panel-cards") };
+  const panels = { "within-bank": el("panel-within-bank"), "other-bank": el("panel-other-bank"), cards: el("panel-cards"), payees: el("panel-payees") };
   tabButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
       tabButtons.forEach((b) => { b.classList.toggle("active", b === btn); b.setAttribute("aria-selected", b === btn ? "true" : "false"); });
@@ -490,6 +741,22 @@ async function init() {
 
   wirePayForm("wb", "within-form");
   wirePayForm("ob", "other-form");
+  wireRecipientToggle("wb", "Sandbox Clearing House");
+  wireRecipientToggle("ob", "Mock Partner Bank");
+  wireWbLookup();
+  wireAddPayeeForm();
+
+  el("btn-save-transfer-prefs").addEventListener("click", async () => {
+    const newDefault = el("set-default-account").value;
+    RAW_PREFERENCES = { ...RAW_PREFERENCES, defaultTransferAccount: newDefault };
+    const { error } = await sb.from("users").update({ preferences: RAW_PREFERENCES }).eq("id", ACCOUNT.id);
+    if (error) {
+      showToast(`Couldn't save: ${error.message}`);
+      return;
+    }
+    DEFAULT_TRANSFER_ACCOUNT = newDefault;
+    showToast("Transfer preference saved");
+  });
 
   el("btn-freeze").addEventListener("click", () => {
     const c = ACCOUNT.cards[state.activeCardIndex];

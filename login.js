@@ -258,7 +258,7 @@ el("verify-code-form").addEventListener("submit", async (e) => {
 
   if (error || !data.session) {
     console.error("verifyOtp error:", error);
-    showFormError(error ? `That code didn't work: ${error.message}` : "That code didn't work — check it and try again.");
+    showFormError(error ? `That code didn't work: ${error.message}` : "That code didn't work, check it and try again.");
     return;
   }
 
@@ -272,7 +272,7 @@ el("back-to-email").addEventListener("click", () => {
   el("request-code-form").hidden = false;
   el("toggle-to-signup-line").hidden = false;
   el("login-title").textContent = "Welcome back";
-  el("login-sub").textContent = "Log in with your email — we'll send you a one-time code.";
+  el("login-sub").textContent = "Log in with your email. We'll send you a one-time code.";
   hideFormError();
 });
 

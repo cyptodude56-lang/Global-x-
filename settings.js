@@ -7,13 +7,21 @@
 // nothing actually saved. So this page is deliberately split into two
 // honest categories:
 //   - Real, persisted, and tested: profile fields, email (via the real
-//     Supabase Auth updateUser call), notification preferences, the
-//     default transfer account, "show cents in balances", and removing a
-//     saved payee — all stored in enable_settings.sql's new
-//     `users.preferences` jsonb column or via a real DELETE.
+//     Supabase Auth updateUser call), and notification preferences — all
+//     stored in enable_settings.sql's `users.preferences` jsonb column.
+//     Save buttons only appear once a field actually differs from what
+//     was loaded (see watchDirty()).
 //   - Honestly not implemented: 2FA, biometrics, device history, and
 //     account closure don't correspond to anything this system actually
 //     does, so they're marked "coming soon" rather than faked.
+//
+// Linked payees (add/remove a payee, default transfer account) moved to
+// payments.html — that's where you actually use them, and it's also
+// where new payees get created (typing an account/routing number when
+// paying someone new).
+//
+// Supports a URL hash to land on a specific tab, e.g. settings.html#security
+// — used by the topbar's "Profile"/"Settings" dropdown links.
 // ---------------------------------------------------------------------------
 
 let CURRENT_USER_ID = null;
@@ -133,17 +141,39 @@ function isNotificationVisible(createdAt) {
 function hashCode(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return h; }
 function initials(acc) { return ((acc.firstName[0] || "") + (acc.lastName[0] || "")).toUpperCase(); }
 
+function watchDirty(fields, saveBtn) {
+  const snapshot = fields.map((f) => (f.type === "checkbox" ? f.checked : f.value));
+  const current = () => fields.map((f) => (f.type === "checkbox" ? f.checked : f.value));
+  const check = () => {
+    saveBtn.hidden = JSON.stringify(current()) === JSON.stringify(snapshot);
+  };
+  fields.forEach((f) => {
+    f.addEventListener("input", check);
+    f.addEventListener("change", check);
+  });
+  check();
+  return {
+    resnapshot() {
+      const fresh = current();
+      for (let i = 0; i < fields.length; i++) snapshot[i] = fresh[i];
+      check();
+    },
+  };
+}
+
+let profileDirtyTracker = null;
+let notificationsDirtyTracker = null;
+let preferencesDirtyTracker = null;
+
 async function loadData() {
   const filters = (q) => q.eq("environment", "sandbox").eq("user_id", CURRENT_USER_ID);
-  const [usersRes, profilesRes, walletsRes, beneficiariesRes, notifRes] = await Promise.all([
+  const [usersRes, profilesRes, notifRes] = await Promise.all([
     sb.from("users").select("*").eq("environment", "sandbox").eq("id", CURRENT_USER_ID),
     filters(sb.from("profiles").select("*")),
-    filters(sb.from("wallets").select("*")),
-    filters(sb.from("beneficiaries").select("*")),
     filters(sb.from("notifications").select("*")),
   ]);
 
-  const failed = [usersRes, profilesRes, walletsRes, beneficiariesRes, notifRes].find((r) => r.error);
+  const failed = [usersRes, profilesRes, notifRes].find((r) => r.error);
   if (failed) {
     document.querySelector(".dashboard-content").innerHTML = `<div class="error-box" style="color:var(--ink)">Couldn't load your settings (${failed.error.message}).</div>`;
     return;
@@ -167,8 +197,6 @@ async function loadData() {
     city: p.city || "",
     postal: p.postal_code || "",
     avatarColor: AVATAR_COLORS[Math.abs(hashCode(u.id)) % AVATAR_COLORS.length],
-    wallets: {},
-    beneficiaries: beneficiariesRes.data.map((b) => ({ id: b.id, name: b.beneficiary_name, bankName: b.bank_name })),
     notifications: notifRes.data
       .filter((n) => isNotificationVisible(n.created_at))
       .map((n) => ({ id: n.id, message: n.message, isRead: n.is_read, date: n.created_at })),
@@ -180,16 +208,22 @@ async function loadData() {
       notifTransactions: prefs.notifTransactions !== false,
       notifLowBalance: prefs.notifLowBalance !== false,
       notifMarketing: !!prefs.notifMarketing,
-      defaultTransferAccount: prefs.defaultTransferAccount || null,
       showCents: prefs.showCents !== false,
     },
   };
-  walletsRes.data.forEach((w) => {
-    ACCOUNT.wallets[w.wallet_type] = { id: w.id, currency: w.currency, balance: Number(w.current_balance) };
-  });
   originalEmail = ACCOUNT.email;
 
   renderAll();
+
+  profileDirtyTracker = watchDirty(
+    [el("set-first-name"), el("set-last-name"), el("set-email"), el("set-phone"), el("set-dob"), el("set-address"), el("set-city"), el("set-postal")],
+    el("btn-save-profile")
+  );
+  notificationsDirtyTracker = watchDirty(
+    [el("notif-email"), el("notif-sms"), el("notif-push"), el("notif-security"), el("notif-transactions"), el("notif-low-balance"), el("notif-marketing")],
+    el("btn-save-notifications")
+  );
+  preferencesDirtyTracker = watchDirty([el("pref-show-cents")], el("btn-save-preferences"));
 }
 
 // ---------------------------------------------------------------------------
@@ -206,8 +240,6 @@ function renderAll() {
   renderProfileForm();
   renderSecurity();
   renderNotificationPrefs();
-  renderPayees();
-  renderTransferPrefs();
   renderDisplayPrefs();
   loadFxTicker();
 }
@@ -262,40 +294,6 @@ function renderNotificationPrefs() {
   el("notif-marketing").checked = p.notifMarketing;
 }
 
-function renderPayees() {
-  const list = el("payees-list");
-  if (ACCOUNT.beneficiaries.length === 0) {
-    list.innerHTML = '<p class="helper-text">No saved payees yet — add one from the Transfers or Payments page.</p>';
-    return;
-  }
-  list.innerHTML = ACCOUNT.beneficiaries
-    .map(
-      (b) => `
-    <div class="linked-account" data-payee-id="${b.id}">
-      <div class="linked-info">
-        <span class="linked-logo">${b.name.slice(0, 2).toUpperCase()}</span>
-        <div class="linked-details"><p class="linked-name">${b.name}</p><p class="linked-meta">${b.bankName}</p></div>
-      </div>
-      <button class="ghost-btn danger-btn" data-remove-payee="${b.id}" style="flex:none;"><span data-icon="trash"></span> Remove</button>
-    </div>`
-    )
-    .join("");
-  mountIcons(list);
-  list.querySelectorAll("[data-remove-payee]").forEach((btn) => {
-    btn.addEventListener("click", () => removePayee(btn.dataset.removePayee));
-  });
-}
-
-function renderTransferPrefs() {
-  const select = el("set-default-account");
-  select.innerHTML = Object.entries(ACCOUNT.wallets)
-    .map(([type, w]) => `<option value="${type}">${capitalize(type)} (${formatMoney(w.balance, w.currency)})</option>`)
-    .join("");
-  if (ACCOUNT.preferences.defaultTransferAccount && ACCOUNT.wallets[ACCOUNT.preferences.defaultTransferAccount]) {
-    select.value = ACCOUNT.preferences.defaultTransferAccount;
-  }
-}
-
 function renderDisplayPrefs() {
   el("pref-show-cents").checked = ACCOUNT.preferences.showCents;
 }
@@ -308,18 +306,6 @@ async function savePreferences(patch) {
   ACCOUNT.preferences = { ...ACCOUNT.preferences, ...patch };
   const { error } = await sb.from("users").update({ preferences: ACCOUNT.preferences }).eq("id", ACCOUNT.id);
   return error;
-}
-
-async function removePayee(id) {
-  if (!confirm("Remove this saved payee? You'll need to re-add them to send money to them again.")) return;
-  const { error } = await sb.from("beneficiaries").delete().eq("id", id);
-  if (error) {
-    showToast(`Couldn't remove payee: ${error.message}`);
-    return;
-  }
-  ACCOUNT.beneficiaries = ACCOUNT.beneficiaries.filter((b) => b.id !== id);
-  renderPayees();
-  showToast("Payee removed");
 }
 
 // ---------------------------------------------------------------------------
@@ -369,15 +355,26 @@ async function init() {
   });
   el("btn-explore").addEventListener("click", () => showToast("Explore Opportunities — coming soon in a later phase"));
 
-  // Settings tab switching
+  // Settings tab switching, with support for a deep link like
+  // settings.html#security (used by the topbar's "Settings" dropdown item)
   const navLinks = document.querySelectorAll(".settings-nav-link");
   const panels = document.querySelectorAll(".settings-panel");
+  const validPanels = Array.from(navLinks).map((l) => l.dataset.panel);
+
+  function activatePanel(panelName) {
+    if (!validPanels.includes(panelName)) panelName = "profile";
+    navLinks.forEach((l) => l.classList.toggle("active", l.dataset.panel === panelName));
+    panels.forEach((p) => { p.hidden = p.id !== "panel-" + panelName; });
+  }
+
   navLinks.forEach((link) => {
     link.addEventListener("click", () => {
-      navLinks.forEach((l) => l.classList.toggle("active", l === link));
-      panels.forEach((p) => { p.hidden = p.id !== "panel-" + link.dataset.panel; });
+      activatePanel(link.dataset.panel);
+      history.replaceState(null, "", "#" + link.dataset.panel);
     });
   });
+
+  activatePanel(window.location.hash.replace("#", ""));
 
   // Profile save
   el("btn-save-profile").addEventListener("click", async () => {
@@ -431,8 +428,10 @@ async function init() {
       city: profileUpdates.city,
       postal: profileUpdates.postal_code,
     });
+    if (newEmail !== originalEmail && !emailMsg.includes("failed")) originalEmail = newEmail;
     el("user-name").textContent = `${ACCOUNT.firstName} ${ACCOUNT.lastName}`;
     showToast("Profile saved" + emailMsg);
+    profileDirtyTracker.resnapshot();
   });
 
   // Notifications save
@@ -447,18 +446,14 @@ async function init() {
       notifMarketing: el("notif-marketing").checked,
     });
     showToast(error ? `Couldn't save: ${error.message}` : "Notification preferences saved");
-  });
-
-  // Transfer preferences save
-  el("btn-save-transfer-prefs").addEventListener("click", async () => {
-    const error = await savePreferences({ defaultTransferAccount: el("set-default-account").value });
-    showToast(error ? `Couldn't save: ${error.message}` : "Transfer preference saved");
+    if (!error) notificationsDirtyTracker.resnapshot();
   });
 
   // Display preferences save
   el("btn-save-preferences").addEventListener("click", async () => {
     const error = await savePreferences({ showCents: el("pref-show-cents").checked });
     showToast(error ? `Couldn't save: ${error.message}` : "Display preferences saved");
+    if (!error) preferencesDirtyTracker.resnapshot();
   });
 
   const ok = await resolveSession();
