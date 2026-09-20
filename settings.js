@@ -373,6 +373,7 @@ async function init() {
     if (btn.dataset.nav === "transfers") { btn.addEventListener("click", () => (window.location.href = "transfers.html")); return; }
     if (btn.dataset.nav === "payments") { btn.addEventListener("click", () => (window.location.href = "payments.html")); return; }
     if (btn.dataset.nav === "cards") { btn.addEventListener("click", () => (window.location.href = "cards.html")); return; }
+    if (btn.dataset.nav === "statements") { btn.addEventListener("click", () => (window.location.href = "statements.html")); return; }
     btn.addEventListener("click", () => { showToast(`${btn.textContent.trim()} — coming soon in a later phase`); closeSidebar(); });
   });
   document.querySelectorAll("[data-coming-soon]").forEach((elm) => {

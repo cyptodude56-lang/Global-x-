@@ -441,6 +441,11 @@ async function init() {
       btn.addEventListener("click", () => (window.location.href = "cards.html"));
       return;
     }
+
+    if (btn.dataset.nav === "statements") { 
+      btn.addEventListener("click", () => (window.location.href = "statements.html")); 
+      return; }
+      
     if (btn.dataset.nav === "settings") {
       btn.addEventListener("click", () => (window.location.href = "settings.html"));
       return;
