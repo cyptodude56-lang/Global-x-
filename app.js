@@ -430,7 +430,6 @@ function renderAccountsGrid() {
 }
 
 function renderQuickActionAvailability() {
-  document.querySelector('.quick-action-btn[data-action="send"]').disabled = ACCOUNT.beneficiaries.length === 0;
   document.querySelector('.quick-action-btn[data-action="transfer"]').disabled = Object.keys(ACCOUNT.wallets).length < 2;
 }
 
@@ -608,6 +607,14 @@ function renderSpending() {
 
 // ---- Notifications ----
 
+async function markAllNotificationsRead() {
+  if (!ACCOUNT.notifications.some((n) => !n.isRead)) return;
+  ACCOUNT.notifications.forEach((n) => { n.isRead = true; });
+  renderNotifications();
+  const { error } = await sb.from("notifications").update({ is_read: true }).eq("user_id", CURRENT_USER_ID).eq("is_read", false);
+  if (error) console.warn("Couldn't mark notifications as read:", error);
+}
+
 function renderNotifications() {
   const unread = ACCOUNT.notifications.filter((n) => !n.isRead).length;
   const badge = el("bell-badge");
@@ -746,6 +753,10 @@ function formFor(kind) {
             <option value="bank_transfer">Bank transfer</option>
           </select>
         </div>
+        <div id="f-bank-details" hidden>
+          <div class="field"><label for="f-bank-account">Account number</label><input id="f-bank-account" type="text" inputmode="numeric" placeholder="Account number" /></div>
+          <div class="field"><label for="f-bank-routing">Routing number</label><input id="f-bank-routing" type="text" inputmode="numeric" placeholder="9-digit routing number" /></div>
+        </div>
         <div class="field"><label for="f-amount">Amount</label>
           <input id="f-amount" type="number" min="0.01" step="0.01" placeholder="0.00" required />
         </div>
@@ -756,19 +767,25 @@ function formFor(kind) {
   }
 
   if (kind === "send") {
-    if (acc.beneficiaries.length === 0) {
-      return `
-        <p id="modal-title" class="modal-title">Pay a bill / send money</p>
-        <p class="helper-text">No saved beneficiaries yet for this account.</p>
-      `;
-    }
+    const hasPayees = acc.beneficiaries.length > 0;
     return `
       <p id="modal-title" class="modal-title">Pay a bill / send money</p>
+      <div class="transfer-type-toggle">
+        <button type="button" class="transfer-type-btn${hasPayees ? " active" : ""}" data-send-mode="saved" ${hasPayees ? "" : "disabled"}>Saved payee</button>
+        <button type="button" class="transfer-type-btn${hasPayees ? "" : " active"}" data-send-mode="new">Enter account details</button>
+      </div>
       <form id="tx-form">
-        <div class="field"><label for="f-beneficiary">Pay to</label>
-          <select id="f-beneficiary">${acc.beneficiaries
-            .map((b) => `<option value="${b.id}">${b.name} (${b.bankName})</option>`)
-            .join("")}</select>
+        <div class="field" id="f-saved-field" ${hasPayees ? "" : "hidden"}><label for="f-beneficiary">Pay to</label>
+          <select id="f-beneficiary">
+            <option value="">Select a payee…</option>
+            ${acc.beneficiaries.map((b) => `<option value="${b.id}">${b.name} (${b.bankName})</option>`).join("")}
+          </select>
+        </div>
+        <div id="f-new-fields" ${hasPayees ? "hidden" : ""}>
+          <div class="field"><label for="f-new-name">Recipient name (optional)</label><input id="f-new-name" type="text" placeholder="e.g. Acme Corp — shown in your statement" /></div>
+          <div class="field"><label for="f-new-account">Account number</label><input id="f-new-account" type="text" inputmode="numeric" placeholder="Account number" /></div>
+          <div class="field"><label for="f-new-routing">Routing number</label><input id="f-new-routing" type="text" inputmode="numeric" placeholder="9-digit routing number" /></div>
+          <label class="checkbox-row"><input type="checkbox" id="f-save-payee" checked /> Save this payee for next time</label>
         </div>
         <div class="field"><label for="f-account">From</label>
           <select id="f-account">${walletOptions(preset)}</select>
@@ -814,6 +831,10 @@ function formFor(kind) {
             <option value="bank_transfer">Bank transfer</option>
           </select>
         </div>
+        <div id="f-bank-details" hidden>
+          <div class="field"><label for="f-bank-account">Account number</label><input id="f-bank-account" type="text" inputmode="numeric" placeholder="Account number" /></div>
+          <div class="field"><label for="f-bank-routing">Routing number</label><input id="f-bank-routing" type="text" inputmode="numeric" placeholder="9-digit routing number" /></div>
+        </div>
         <div class="field"><label for="f-amount">Amount</label>
           <input id="f-amount" type="number" min="0.01" step="0.01" placeholder="0.00" required />
         </div>
@@ -848,7 +869,28 @@ function wireForm(kind) {
     updateToNote();
   }
 
-  form.addEventListener("submit", (event) => {
+  if (kind === "add" || kind === "withdraw") {
+    const updateBankDetailsVisibility = () => {
+      el("f-bank-details").hidden = el("f-method").value !== "bank_transfer";
+    };
+    el("f-method").addEventListener("change", updateBankDetailsVisibility);
+    updateBankDetailsVisibility();
+  }
+
+  if (kind === "send") {
+    form.dataset.sendMode = acc.beneficiaries.length > 0 ? "saved" : "new";
+    document.querySelectorAll('.transfer-type-btn[data-send-mode]').forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (btn.disabled) return;
+        form.dataset.sendMode = btn.dataset.sendMode;
+        document.querySelectorAll('.transfer-type-btn[data-send-mode]').forEach((b) => b.classList.toggle("active", b === btn));
+        el("f-saved-field").hidden = btn.dataset.sendMode !== "saved";
+        el("f-new-fields").hidden = btn.dataset.sendMode !== "new";
+      });
+    });
+  }
+
+  form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const amount = parseFloat(el("f-amount").value);
 
@@ -860,19 +902,72 @@ function wireForm(kind) {
     if (kind === "add") {
       const type = el("f-account").value;
       const method = el("f-method").value;
+      let counterparty = methodLabel(method);
+      if (method === "bank_transfer") {
+        const acctNum = el("f-bank-account").value.trim();
+        const routingNum = el("f-bank-routing").value.trim();
+        if (!acctNum || !routingNum) {
+          showError("Enter the account number and routing number.");
+          return;
+        }
+        counterparty = `${methodLabel(method)} (••••${acctNum.slice(-4)})`;
+      }
       const wallet = acc.wallets[type];
       wallet.balance += amount;
       wallet.available += amount;
       addHistory(
-        tx({ label: "Deposit", counterparty: methodLabel(method), amount, currency: wallet.currency, sign: "+", date: "Just now", walletLabel: capitalize(type) })
+        tx({ label: "Deposit", counterparty, amount, currency: wallet.currency, sign: "+", date: "Just now", walletLabel: capitalize(type) })
       );
     }
 
     if (kind === "send") {
-      const benId = el("f-beneficiary").value;
-      const ben = acc.beneficiaries.find((b) => b.id === benId);
       const type = el("f-account").value;
       const wallet = acc.wallets[type];
+      const mode = form.dataset.sendMode;
+      let recipientName;
+
+      if (mode === "saved") {
+        const benId = el("f-beneficiary").value;
+        const ben = acc.beneficiaries.find((b) => b.id === benId);
+        if (!ben) {
+          showError("Choose a payee.");
+          return;
+        }
+        recipientName = ben.name;
+      } else {
+        const newAccount = el("f-new-account").value.trim();
+        const newRouting = el("f-new-routing").value.trim();
+        if (!newAccount) {
+          showError("Enter the recipient's account number.");
+          return;
+        }
+        if (!newRouting) {
+          showError("Enter the recipient's routing number.");
+          return;
+        }
+        recipientName = el("f-new-name").value.trim() || `Account ending in ${newAccount.slice(-4)}`;
+
+        if (el("f-save-payee").checked) {
+          const { data: newBen, error: saveErr } = await sb
+            .from("beneficiaries")
+            .insert({
+              user_id: CURRENT_USER_ID,
+              beneficiary_name: recipientName,
+              bank_name: "Mock Partner Bank",
+              account_number: newAccount,
+              routing_number: newRouting,
+              environment: "sandbox",
+            })
+            .select()
+            .single();
+          if (!saveErr && newBen) {
+            acc.beneficiaries.push({ id: newBen.id, name: newBen.beneficiary_name, bankName: newBen.bank_name });
+          } else if (saveErr) {
+            console.warn("Couldn't save new payee (payment still proceeds):", saveErr);
+          }
+        }
+      }
+
       if (wallet.balance < amount) {
         showError(`Not enough ${wallet.currency} balance in ${type}.`);
         return;
@@ -880,7 +975,7 @@ function wireForm(kind) {
       wallet.balance -= amount;
       wallet.available -= amount;
       addHistory(
-        tx({ label: "Sent to beneficiary", counterparty: ben.name, amount, currency: wallet.currency, sign: "-", date: "Just now", walletLabel: capitalize(type) })
+        tx({ label: "Sent to beneficiary", counterparty: recipientName, amount, currency: wallet.currency, sign: "-", date: "Just now", walletLabel: capitalize(type) })
       );
     }
 
@@ -917,10 +1012,20 @@ function wireForm(kind) {
         showError(`Not enough ${wallet.currency} balance in ${type}.`);
         return;
       }
+      let counterparty = methodLabel(method);
+      if (method === "bank_transfer") {
+        const acctNum = el("f-bank-account").value.trim();
+        const routingNum = el("f-bank-routing").value.trim();
+        if (!acctNum || !routingNum) {
+          showError("Enter the account number and routing number.");
+          return;
+        }
+        counterparty = `${methodLabel(method)} (••••${acctNum.slice(-4)})`;
+      }
       wallet.balance -= amount;
       wallet.available -= amount;
       addHistory(
-        tx({ label: "Withdrawal", counterparty: methodLabel(method), amount, currency: wallet.currency, sign: "-", date: "Just now", walletLabel: capitalize(type) })
+        tx({ label: "Withdrawal", counterparty, amount, currency: wallet.currency, sign: "-", date: "Just now", walletLabel: capitalize(type) })
       );
     }
 
@@ -1038,7 +1143,9 @@ async function init() {
   el("btn-bell").addEventListener("click", (e) => {
     e.stopPropagation();
     const dd = el("notif-dropdown");
-    dd.hidden = !dd.hidden;
+    const wasOpen = !dd.hidden;
+    dd.hidden = wasOpen;
+    if (wasOpen) markAllNotificationsRead();
   });
 
   el("user-menu-btn").addEventListener("click", (e) => {
@@ -1050,7 +1157,10 @@ async function init() {
 
   document.addEventListener("click", (e) => {
     const notifDd = el("notif-dropdown");
-    if (!notifDd.hidden && !notifDd.contains(e.target) && e.target !== el("btn-bell")) notifDd.hidden = true;
+    if (!notifDd.hidden && !notifDd.contains(e.target) && e.target !== el("btn-bell")) {
+      notifDd.hidden = true;
+      markAllNotificationsRead();
+    }
 
     const userDd = el("user-dropdown");
     if (!userDd.hidden && !userDd.contains(e.target) && !el("user-menu-btn").contains(e.target)) {
@@ -1094,6 +1204,10 @@ async function init() {
       btn.addEventListener("click", () => (window.location.href = "cards.html"));
       return;
     }
+    if (btn.dataset.nav === "statements") { 
+      btn.addEventListener("click", () => (window.location.href = "statements.html")); 
+      return; }
+      
     if (btn.dataset.nav === "settings") {
       btn.addEventListener("click", () => (window.location.href = "settings.html"));
       return;

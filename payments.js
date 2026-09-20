@@ -87,6 +87,7 @@ function mountIcons(root = document) {
 }
 function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
 let SHOW_CENTS = true;
+let NOTIFY_TRANSACTIONS = true;
 function formatMoney(amount, currency) {
   const validCurrency = typeof currency === "string" && /^[A-Za-z]{3}$/.test(currency) ? currency.toUpperCase() : null;
   return new Intl.NumberFormat("en-US", {
@@ -157,6 +158,7 @@ const recipientState = {
 };
 let addPayeeBankType = "within";
 let addPayeeLookupOk = false;
+let addPayeeLookupName = null;
 
 function isNotificationVisible(createdAt) {
   const ageMs = Date.now() - new Date(createdAt).getTime();
@@ -189,6 +191,7 @@ async function loadData() {
   const u = usersRes.data[0];
   const p = profilesRes.data[0] || {};
   SHOW_CENTS = !(u && u.preferences && u.preferences.showCents === false);
+  NOTIFY_TRANSACTIONS = !(u && u.preferences && u.preferences.notifTransactions === false);
   RAW_PREFERENCES = (u && u.preferences) || {};
   DEFAULT_TRANSFER_ACCOUNT = (u && u.preferences && u.preferences.defaultTransferAccount) || null;
 
@@ -264,6 +267,14 @@ function renderAll() {
   loadFxTicker();
 }
 
+async function markAllNotificationsRead() {
+  if (!ACCOUNT.notifications.some((n) => !n.isRead)) return;
+  ACCOUNT.notifications.forEach((n) => { n.isRead = true; });
+  renderNotifications();
+  const { error } = await sb.from("notifications").update({ is_read: true }).eq("user_id", CURRENT_USER_ID).eq("is_read", false);
+  if (error) console.warn("Couldn't mark notifications as read:", error);
+}
+
 function renderNotifications() {
   const unread = ACCOUNT.notifications.filter((n) => !n.isRead).length;
   const badge = el("bell-badge");
@@ -324,19 +335,28 @@ function wireWbLookup() {
     const val = el("wb-new-account").value.trim();
     recipientState.wb.lookupOk = false;
     recipientState.wb.lookupName = null;
+    const nameField = el("wb-new-name");
+    nameField.classList.remove("lookup-found", "lookup-not-found");
     if (!val) {
-      el("wb-lookup-status").textContent = "";
+      nameField.value = "";
+      nameField.placeholder = "Enter an account number above";
       return;
     }
-    el("wb-lookup-status").textContent = "Checking…";
-    el("wb-lookup-status").style.color = "var(--muted)";
+    nameField.value = "";
+    nameField.placeholder = "Checking…";
     debounceTimer = setTimeout(async () => {
       const { found, holderName } = await lookupHallmarkAccount(val);
       if (el("wb-new-account").value.trim() !== val) return; // input changed since; ignore stale response
       recipientState.wb.lookupOk = found;
       recipientState.wb.lookupName = holderName;
-      el("wb-lookup-status").textContent = found ? `✓ ${holderName}` : "✗ No Hallmark account found with that number";
-      el("wb-lookup-status").style.color = found ? "var(--positive)" : "var(--negative)";
+      if (found) {
+        nameField.value = holderName;
+        nameField.classList.add("lookup-found");
+      } else {
+        nameField.value = "";
+        nameField.placeholder = "No Hallmark account found with that number";
+        nameField.classList.add("lookup-not-found");
+      }
     }, 400);
   });
 }
@@ -397,8 +417,19 @@ function wireAddPayeeForm() {
       addPayeeBankType = btn.dataset.payeeBank;
       document.querySelectorAll(".transfer-type-btn[data-payee-bank]").forEach((b) => b.classList.toggle("active", b === btn));
       el("np-routing-field").hidden = addPayeeBankType === "within";
-      el("np-lookup-status").textContent = "";
       addPayeeLookupOk = false;
+      addPayeeLookupName = null;
+      const nameField = el("np-name");
+      nameField.classList.remove("lookup-found", "lookup-not-found");
+      if (addPayeeBankType === "within") {
+        nameField.readOnly = true;
+        nameField.value = "";
+        nameField.placeholder = "Enter an account number above";
+      } else {
+        nameField.readOnly = false;
+        nameField.value = "";
+        nameField.placeholder = "e.g. Acme Corp";
+      }
     });
   });
 
@@ -408,42 +439,63 @@ function wireAddPayeeForm() {
     clearTimeout(debounceTimer);
     const val = el("np-account").value.trim();
     addPayeeLookupOk = false;
+    addPayeeLookupName = null;
+    const nameField = el("np-name");
+    nameField.classList.remove("lookup-found", "lookup-not-found");
     if (!val) {
-      el("np-lookup-status").textContent = "";
+      nameField.value = "";
+      nameField.placeholder = "Enter an account number above";
       return;
     }
-    el("np-lookup-status").textContent = "Checking…";
-    el("np-lookup-status").style.color = "var(--muted)";
+    nameField.value = "";
+    nameField.placeholder = "Checking…";
     debounceTimer = setTimeout(async () => {
       const { found, holderName } = await lookupHallmarkAccount(val);
       if (el("np-account").value.trim() !== val) return;
       addPayeeLookupOk = found;
-      el("np-lookup-status").textContent = found ? `✓ ${holderName}` : "✗ No Hallmark account found with that number";
-      el("np-lookup-status").style.color = found ? "var(--positive)" : "var(--negative)";
+      addPayeeLookupName = holderName;
+      if (found) {
+        nameField.value = holderName;
+        nameField.classList.add("lookup-found");
+      } else {
+        nameField.value = "";
+        nameField.placeholder = "No Hallmark account found with that number";
+        nameField.classList.add("lookup-not-found");
+      }
     }, 400);
   });
 
   el("btn-add-payee").addEventListener("click", async () => {
     el("np-error").hidden = true;
-    const name = el("np-name").value.trim();
     const account = el("np-account").value.trim();
     const routing = el("np-routing").value.trim();
     const bankName = addPayeeBankType === "within" ? "Sandbox Clearing House" : "Mock Partner Bank";
+    let name;
 
-    if (!name || !account) {
-      el("np-error").textContent = "Enter a name and account number.";
-      el("np-error").hidden = false;
-      return;
-    }
-    if (addPayeeBankType === "within" && !addPayeeLookupOk) {
-      el("np-error").textContent = "That account number doesn't match a Hallmark account.";
-      el("np-error").hidden = false;
-      return;
-    }
-    if (addPayeeBankType === "other" && !routing) {
-      el("np-error").textContent = "Enter the routing number.";
-      el("np-error").hidden = false;
-      return;
+    if (addPayeeBankType === "within") {
+      if (!account) {
+        el("np-error").textContent = "Enter an account number.";
+        el("np-error").hidden = false;
+        return;
+      }
+      if (!addPayeeLookupOk) {
+        el("np-error").textContent = "That account number doesn't match a Hallmark account.";
+        el("np-error").hidden = false;
+        return;
+      }
+      name = addPayeeLookupName;
+    } else {
+      name = el("np-name").value.trim();
+      if (!name || !account) {
+        el("np-error").textContent = "Enter a name and account number.";
+        el("np-error").hidden = false;
+        return;
+      }
+      if (!routing) {
+        el("np-error").textContent = "Enter the routing number.";
+        el("np-error").hidden = false;
+        return;
+      }
     }
 
     const { data, error } = await sb
@@ -467,10 +519,12 @@ function wireAddPayeeForm() {
 
     ACCOUNT.beneficiaries.push({ id: data.id, name: data.beneficiary_name, bankName: data.bank_name });
     el("np-name").value = "";
+    el("np-name").classList.remove("lookup-found", "lookup-not-found");
+    el("np-name").placeholder = addPayeeBankType === "within" ? "Enter an account number above" : "e.g. Acme Corp";
     el("np-account").value = "";
     el("np-routing").value = "";
-    el("np-lookup-status").textContent = "";
     addPayeeLookupOk = false;
+    addPayeeLookupName = null;
     showToast("Payee added");
     renderPayeesList();
     renderPayForm("wb", "Sandbox Clearing House");
@@ -578,6 +632,14 @@ function renderCardHistory() {
   ACCOUNT.cardHistory.forEach((t) => list.appendChild(renderTxRow(t)));
 }
 
+async function createNotification(type, message) {
+  if (type === "transaction" && !NOTIFY_TRANSACTIONS) return;
+  const { error } = await sb.from("notifications").insert({
+    user_id: CURRENT_USER_ID, type, message, is_read: false, environment: "sandbox",
+  });
+  if (error) console.warn(`Couldn't create ${type} notification (action still proceeds):`, error);
+}
+
 function addPaymentHistory(entry) {
   ACCOUNT.paymentsHistory.unshift(entry);
   state.highlightIds.push(entry.id);
@@ -620,22 +682,29 @@ function wirePayForm(prefix, formId) {
       }
       recipientName = ben.name;
     } else {
-      recipientName = el(`${prefix}-new-name`).value.trim();
       const recipientAccountNumber = el(`${prefix}-new-account`).value.trim();
-      if (!recipientName || !recipientAccountNumber) {
-        el(`${prefix}-error`).textContent = "Enter the recipient's name and account number.";
-        el(`${prefix}-error`).hidden = false;
-        return;
-      }
       let recipientRoutingNumber = null;
+
       if (prefix === "wb") {
+        if (!recipientAccountNumber) {
+          el(`${prefix}-error`).textContent = "Enter the recipient's account number.";
+          el(`${prefix}-error`).hidden = false;
+          return;
+        }
         if (!recipientState.wb.lookupOk) {
           el(`${prefix}-error`).textContent = "That account number doesn't match a Hallmark account.";
           el(`${prefix}-error`).hidden = false;
           return;
         }
+        recipientName = recipientState.wb.lookupName;
       } else {
+        recipientName = el(`${prefix}-new-name`).value.trim() || `Account ending in ${recipientAccountNumber.slice(-4)}`;
         recipientRoutingNumber = el(`${prefix}-new-routing`).value.trim();
+        if (!recipientAccountNumber) {
+          el(`${prefix}-error`).textContent = "Enter the recipient's account number.";
+          el(`${prefix}-error`).hidden = false;
+          return;
+        }
         if (!recipientRoutingNumber) {
           el(`${prefix}-error`).textContent = "Enter the recipient's routing number.";
           el(`${prefix}-error`).hidden = false;
@@ -672,13 +741,17 @@ function wirePayForm(prefix, formId) {
       amount, currency: wallet.currency, sign: "-", date: "Just now", status: "Completed", ref: null, walletLabel: capitalize(fromType),
     });
     showToast(`Sent to ${recipientName}`);
+    await createNotification("transaction", `You sent ${formatMoney(amount, wallet.currency)} to ${recipientName}.`);
     el(`${prefix}-amount`).value = "";
     el(`${prefix}-memo`).value = "";
     if (mode === "new") {
       el(`${prefix}-new-name`).value = "";
       el(`${prefix}-new-account`).value = "";
       if (el(`${prefix}-new-routing`)) el(`${prefix}-new-routing`).value = "";
-      if (prefix === "wb") el("wb-lookup-status").textContent = "";
+      if (prefix === "wb") {
+        el("wb-new-name").placeholder = "Enter an account number above";
+        el("wb-new-name").classList.remove("lookup-found", "lookup-not-found");
+      }
       setRecipientMode(prefix, "saved", bankName);
     }
     renderPayForm(prefix, bankName);
@@ -692,7 +765,13 @@ async function init() {
   loadFxTicker();
 
   el("btn-logout").addEventListener("click", async () => { await sb.auth.signOut(); window.location.href = "index.html"; });
-  el("btn-bell").addEventListener("click", (e) => { e.stopPropagation(); el("notif-dropdown").hidden = !el("notif-dropdown").hidden; });
+  el("btn-bell").addEventListener("click", (e) => {
+    e.stopPropagation();
+    const dd = el("notif-dropdown");
+    const wasOpen = !dd.hidden;
+    dd.hidden = wasOpen;
+    if (wasOpen) markAllNotificationsRead();
+  });
   el("user-menu-btn").addEventListener("click", (e) => {
     e.stopPropagation();
     const dd = el("user-dropdown");
@@ -701,7 +780,10 @@ async function init() {
   });
   document.addEventListener("click", (e) => {
     const notifDd = el("notif-dropdown");
-    if (!notifDd.hidden && !notifDd.contains(e.target) && e.target !== el("btn-bell")) notifDd.hidden = true;
+    if (!notifDd.hidden && !notifDd.contains(e.target) && e.target !== el("btn-bell")) {
+      notifDd.hidden = true;
+      markAllNotificationsRead();
+    }
     const userDd = el("user-dropdown");
     if (!userDd.hidden && !userDd.contains(e.target) && !el("user-menu-btn").contains(e.target)) {
       userDd.hidden = true;

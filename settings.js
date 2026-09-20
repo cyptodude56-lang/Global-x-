@@ -244,6 +244,14 @@ function renderAll() {
   loadFxTicker();
 }
 
+async function markAllNotificationsRead() {
+  if (!ACCOUNT.notifications.some((n) => !n.isRead)) return;
+  ACCOUNT.notifications.forEach((n) => { n.isRead = true; });
+  renderNotificationsDropdown();
+  const { error } = await sb.from("notifications").update({ is_read: true }).eq("user_id", CURRENT_USER_ID).eq("is_read", false);
+  if (error) console.warn("Couldn't mark notifications as read:", error);
+}
+
 function renderNotificationsDropdown() {
   const unread = ACCOUNT.notifications.filter((n) => !n.isRead).length;
   const badge = el("bell-badge");
@@ -302,6 +310,14 @@ function renderDisplayPrefs() {
 // Saving (real writes)
 // ---------------------------------------------------------------------------
 
+async function createNotification(type, message) {
+  if (type === "security" && ACCOUNT.preferences.notifSecurity === false) return;
+  const { error } = await sb.from("notifications").insert({
+    user_id: ACCOUNT.id, type, message, is_read: false, environment: "sandbox",
+  });
+  if (error) console.warn(`Couldn't create ${type} notification (change still saved):`, error);
+}
+
 async function savePreferences(patch) {
   ACCOUNT.preferences = { ...ACCOUNT.preferences, ...patch };
   const { error } = await sb.from("users").update({ preferences: ACCOUNT.preferences }).eq("id", ACCOUNT.id);
@@ -318,7 +334,13 @@ async function init() {
 
   el("btn-logout").addEventListener("click", async () => { await sb.auth.signOut(); window.location.href = "index.html"; });
   el("btn-signout-here").addEventListener("click", async () => { await sb.auth.signOut(); window.location.href = "index.html"; });
-  el("btn-bell").addEventListener("click", (e) => { e.stopPropagation(); el("notif-dropdown").hidden = !el("notif-dropdown").hidden; });
+  el("btn-bell").addEventListener("click", (e) => {
+    e.stopPropagation();
+    const dd = el("notif-dropdown");
+    const wasOpen = !dd.hidden;
+    dd.hidden = wasOpen;
+    if (wasOpen) markAllNotificationsRead();
+  });
   el("user-menu-btn").addEventListener("click", (e) => {
     e.stopPropagation();
     const dd = el("user-dropdown");
@@ -327,7 +349,10 @@ async function init() {
   });
   document.addEventListener("click", (e) => {
     const notifDd = el("notif-dropdown");
-    if (!notifDd.hidden && !notifDd.contains(e.target) && e.target !== el("btn-bell")) notifDd.hidden = true;
+    if (!notifDd.hidden && !notifDd.contains(e.target) && e.target !== el("btn-bell")) {
+      notifDd.hidden = true;
+      markAllNotificationsRead();
+    }
     const userDd = el("user-dropdown");
     if (!userDd.hidden && !userDd.contains(e.target) && !el("user-menu-btn").contains(e.target)) {
       userDd.hidden = true;
@@ -431,6 +456,7 @@ async function init() {
     if (newEmail !== originalEmail && !emailMsg.includes("failed")) originalEmail = newEmail;
     el("user-name").textContent = `${ACCOUNT.firstName} ${ACCOUNT.lastName}`;
     showToast("Profile saved" + emailMsg);
+    await createNotification("security", "Your profile details were updated.");
     profileDirtyTracker.resnapshot();
   });
 
@@ -446,14 +472,20 @@ async function init() {
       notifMarketing: el("notif-marketing").checked,
     });
     showToast(error ? `Couldn't save: ${error.message}` : "Notification preferences saved");
-    if (!error) notificationsDirtyTracker.resnapshot();
+    if (!error) {
+      await createNotification("security", "Your notification preferences were updated.");
+      notificationsDirtyTracker.resnapshot();
+    }
   });
 
   // Display preferences save
   el("btn-save-preferences").addEventListener("click", async () => {
     const error = await savePreferences({ showCents: el("pref-show-cents").checked });
     showToast(error ? `Couldn't save: ${error.message}` : "Display preferences saved");
-    if (!error) preferencesDirtyTracker.resnapshot();
+    if (!error) {
+      await createNotification("security", "Your display preferences were updated.");
+      preferencesDirtyTracker.resnapshot();
+    }
   });
 
   const ok = await resolveSession();

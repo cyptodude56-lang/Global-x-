@@ -1,25 +1,23 @@
 // ---------------------------------------------------------------------------
-// Hallmark — Cards page.
+// Hallmark — Statements page.
 //
-// Shows every card the customer has — genuinely more than the old 2-card
-// assumption (1 debit + 1 virtual) the dashboard's "Get card" button was
-// built around. enable_multiple_cards.sql replaced that hard cap with a
-// generous limit (6 total) instead, so both physical and virtual cards can
-// be requested more than once. Card issuance here is a real write, same
-// owner_insert policy the dashboard's "Get card" already uses — verified
-// directly against a real database that a customer can now hold multiple
-// physical cards, and that the 7th request is cleanly rejected.
+// Same session/session-completeness gate as every other page (see
+// accounts.js / payments.js). Reads real ledger_transactions across all of
+// the customer's wallets and lets them slice it by account, month, and
+// income/expenses/transfers — then export the filtered view as CSV or print
+// it. Styling lives in statements.css, a drop-in addition (styles.css is
+// untouched) that reuses the same --ink/--gold/--paper palette as the rest
+// of the app.
 //
-// CVV numbers shown here are NOT real data — there's no cvv column
-// anywhere in this schema. They're generated client-side, deterministic
-// per card (so they don't change on every render), purely for visual
-// completeness on an already-fake sandbox card. Masked by default, same
-// as everything else sensitive-looking in this project.
+// Note on "Current balance": wallets only store today's live balance, not
+// a historical end-of-period snapshot, so this page is honest about that —
+// it shows Money in / Money out / Net for the selected period, and labels
+// the balance figure "Current balance (today)" rather than pretending it's
+// the period's closing balance.
 // ---------------------------------------------------------------------------
 
 let CURRENT_USER_ID = null;
 const AVATAR_COLORS = ["#1F6F5C", "#2451B0", "#C98A3B", "#8B3A62", "#3A6B8A", "#6B7A2E", "#7A3A3A"];
-const PAN_FIELD_CANDIDATES = ["full_pan", "card_number", "pan", "unmasked_pan", "card_number_full", "number"];
 
 const sb =
   window.HALLMARK_SUPABASE_URL && !window.HALLMARK_SUPABASE_URL.includes("YOUR-PROJECT")
@@ -57,7 +55,7 @@ async function resolveSession() {
   return true;
 }
 
-// ---- Icons (same set as elsewhere) ----
+// ---- Icons (same set as elsewhere, plus download/print for this page) ----
 
 const ICON_PATHS = {
   dashboard: '<path d="M3 10.5 10 4l7 6.5M5 9.5V16h10V9.5"/>',
@@ -77,7 +75,8 @@ const ICON_PATHS = {
   logout: '<path d="M8 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/><path d="M9 10h8M14 6l3 4-3 4"/>',
   close: '<path d="M5 5l10 10M15 5 5 15"/>',
   hamburger: '<path d="M3 5h14M3 10h14M3 15h14"/>',
-  plus: '<path d="M10 4v12M4 10h12"/>',
+  download: '<path d="M10 3v9M6 8l4 4 4-4"/><path d="M4 15.5h12"/>',
+  print: '<rect x="5" y="7" width="10" height="6" rx="1"/><path d="M6 7V4h8v3M6 13v3h8v-3"/>',
 };
 
 function icon(name, size = 18) {
@@ -87,6 +86,10 @@ function mountIcons(root = document) {
   root.querySelectorAll("[data-icon]").forEach((elm) => { elm.innerHTML = icon(elm.dataset.icon); });
 }
 function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+function lastFour(masked) {
+  const match = String(masked || "").match(/(\d{4})\s*$/);
+  return match ? match[1] : "????";
+}
 function showToast(msg) {
   const t = el("toast");
   t.textContent = msg;
@@ -94,29 +97,17 @@ function showToast(msg) {
   clearTimeout(showToast._timer);
   showToast._timer = setTimeout(() => t.classList.remove("show"), 2400);
 }
-function detectFullPan(row) {
-  for (const key of PAN_FIELD_CANDIDATES) {
-    if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== "") return String(row[key]);
-  }
-  return null;
+function hashCode(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return h; }
+function initials(acc) { return ((acc.firstName[0] || "") + (acc.lastName[0] || "")).toUpperCase(); }
+function formatMoney(amount, currency) {
+  const validCurrency = typeof currency === "string" && /^[A-Za-z]{3}$/.test(currency) ? currency.toUpperCase() : null;
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: validCurrency || "USD" }).format(Number(amount) || 0);
 }
-function lastFour(masked) {
-  const match = String(masked || "").match(/(\d{4})\s*$/);
-  return match ? match[1] : "????";
-}
-function formatPan(raw) {
-  const digits = String(raw).replace(/\D/g, "");
-  if (digits.length < 12) return raw;
-  return digits.replace(/(.{4})/g, "$1 ").trim();
-}
+function formatDate(iso) { return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); }
 function isNotificationVisible(createdAt) {
   const ageMs = Date.now() - new Date(createdAt).getTime();
   return ageMs <= 48 * 60 * 60 * 1000;
 }
-
-function hashCode(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return h; }
-function fakeCvv(cardId) { return String(100 + (Math.abs(hashCode(String(cardId))) % 900)); }
-function randomDigits(n) { let s = ""; for (let i = 0; i < n; i++) s += Math.floor(Math.random() * 10); return s; }
 
 const TICKER_PAIRS = [["USD", "GBP"], ["USD", "EUR"], ["GBP", "EUR"], ["GBP", "USD"], ["EUR", "USD"], ["EUR", "GBP"]];
 async function loadFxTicker() {
@@ -143,27 +134,59 @@ async function loadFxTicker() {
 // Data
 // ---------------------------------------------------------------------------
 
+const TYPE_LABELS = { deposit: "Income", payment_out: "Payment", withdrawal: "Withdrawal", transfer_out: "Transfer", transfer_in: "Transfer" };
+const TRANSFER_TYPES = ["transfer_out", "transfer_in"];
+
 let ACCOUNT = null;
-let allDetailsVisible = false;
-let selectedRequestType = "virtual";
+const state = { account: "all", month: "all", tab: "all" };
 
 async function loadData() {
   const filters = (q) => q.eq("environment", "sandbox").eq("user_id", CURRENT_USER_ID);
-  const [usersRes, profilesRes, cardsRes, notifRes] = await Promise.all([
+
+  const [usersRes, profilesRes, walletsRes, txRes, notifRes] = await Promise.all([
     sb.from("users").select("*").eq("environment", "sandbox").eq("id", CURRENT_USER_ID),
     filters(sb.from("profiles").select("*")),
-    filters(sb.from("cards").select("*")),
+    filters(sb.from("wallets").select("*")),
+    filters(sb.from("ledger_transactions").select("*")),
     filters(sb.from("notifications").select("*")),
   ]);
 
-  const failed = [usersRes, profilesRes, cardsRes, notifRes].find((r) => r.error);
+  const failed = [usersRes, profilesRes, walletsRes, txRes, notifRes].find((r) => r.error);
   if (failed) {
-    document.querySelector(".dashboard-content").innerHTML = `<div class="error-box" style="color:var(--ink)">Couldn't load your cards (${failed.error.message}).</div>`;
+    document.querySelector(".dashboard-content").innerHTML = `<div class="error-box" style="color:var(--ink)">Couldn't load your statements (${failed.error.message}).</div>`;
     return;
   }
 
   const u = usersRes.data[0];
   const p = profilesRes.data[0] || {};
+
+  const walletTypeById = {};
+  const wallets = {};
+  walletsRes.data.forEach((w) => {
+    walletTypeById[w.id] = w.wallet_type;
+    wallets[w.wallet_type] = { id: w.id, currency: w.currency, balance: Number(w.current_balance), maskedNumber: w.masked_number };
+  });
+
+  const transactions = txRes.data.map((t) => {
+    const amt = Number(t.amount);
+    const d = new Date(t.posted_at);
+    return {
+      id: t.id,
+      walletType: walletTypeById[t.wallet_id] || null,
+      label: t.label || capitalize(t.transaction_type),
+      counterparty: t.counterparty,
+      transactionType: t.transaction_type,
+      signedAmount: amt,
+      amount: Math.abs(amt),
+      currency: t.currency,
+      status: t.status === "completed" ? "Completed" : capitalize(t.status),
+      rawDate: t.posted_at,
+      dateLabel: formatDate(t.posted_at),
+      monthKey: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
+      monthLabel: d.toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+    };
+  });
+  transactions.sort((a, b) => new Date(b.rawDate) - new Date(a.rawDate));
 
   ACCOUNT = {
     id: u.id,
@@ -171,40 +194,54 @@ async function loadData() {
     lastName: p.last_name || "",
     tier: p.tier || "Standard",
     avatarColor: AVATAR_COLORS[Math.abs(hashCode(u.id)) % AVATAR_COLORS.length],
-    cards: cardsRes.data.map((c) => ({
-      id: c.id,
-      maskedPan: c.masked_pan,
-      fullPan: detectFullPan(c),
-      expiry: c.expiry,
-      holder: c.card_holder_name,
-      network: c.card_network,
-      isVirtual: !!c.is_virtual,
-      status: c.status,
-      frozen: c.status === "frozen",
-      revealed: false,
-    })),
+    wallets,
+    transactions,
     notifications: notifRes.data
       .filter((n) => isNotificationVisible(n.created_at))
       .map((n) => ({ id: n.id, message: n.message, isRead: n.is_read, date: n.created_at })),
   };
 
-  renderAll();
+  const months = [...new Map(transactions.map((t) => [t.monthKey, t.monthLabel])).entries()]
+    .sort((a, b) => (a[0] < b[0] ? 1 : -1));
+  state.month = months.length ? months[0][0] : "all";
+
+  renderAll(months);
 }
 
-function initials(acc) { return ((acc.firstName[0] || "") + (acc.lastName[0] || "")).toUpperCase(); }
+function categoryLabel(t) {
+  return TYPE_LABELS[t.transactionType] || capitalize(t.transactionType || "Other");
+}
+
+function matchesTab(t, tab) {
+  if (tab === "all") return true;
+  if (tab === "income") return t.signedAmount >= 0;
+  if (tab === "expenses") return t.signedAmount < 0 && !TRANSFER_TYPES.includes(t.transactionType);
+  if (tab === "transfers") return TRANSFER_TYPES.includes(t.transactionType);
+  return true;
+}
+
+function getFilteredTransactions() {
+  return ACCOUNT.transactions.filter((t) => {
+    if (state.account !== "all" && t.walletType !== state.account) return false;
+    if (state.month !== "all" && t.monthKey !== state.month) return false;
+    if (!matchesTab(t, state.tab)) return false;
+    return true;
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Rendering
 // ---------------------------------------------------------------------------
 
-function renderAll() {
+function renderAll(months) {
   el("user-avatar").textContent = initials(ACCOUNT);
   el("user-avatar").style.background = ACCOUNT.avatarColor;
   el("user-name").textContent = `${ACCOUNT.firstName} ${ACCOUNT.lastName}`;
   el("user-tier").textContent = ACCOUNT.tier;
 
   renderNotifications();
-  renderCardGrids();
+  renderSelects(months);
+  renderStatement();
   loadFxTicker();
 }
 
@@ -227,158 +264,110 @@ function renderNotifications() {
     : '<p class="notif-empty">No notifications.</p>';
 }
 
-function cardItemHtml(c) {
-  const pending = c.status === "pending";
-  const hiddenDisplay = `•••• •••• •••• ${lastFour(c.maskedPan)}`;
-  const shownDisplay = c.fullPan ? formatPan(c.fullPan) : c.maskedPan;
-  const numberToShow = c.revealed && !pending ? shownDisplay : hiddenDisplay;
-  const cvv = c.revealed && !pending ? fakeCvv(c.id) : "•••";
+function renderSelects(months) {
+  const accountSelect = el("stmt-account-select");
+  accountSelect.innerHTML =
+    `<option value="all">All accounts</option>` +
+    Object.entries(ACCOUNT.wallets)
+      .map(([type, w]) => `<option value="${type}">${capitalize(type)} (•••• ${lastFour(w.maskedNumber)})</option>`)
+      .join("");
+  accountSelect.value = state.account;
 
-  return `
-    <div class="card-item" data-card-id="${c.id}">
-      <div class="debit-card-visual card-item-visual ${c.frozen ? "frozen" : ""} ${pending ? "pending" : ""}">
-        <div class="card-top">
-          <span class="card-brand">Hallmark</span>
-          ${pending ? '<span class="card-badge">Arriving soon</span>' : c.frozen ? '<span class="frozen-tag">Frozen</span>' : ""}
-        </div>
-        <div class="card-number">${numberToShow}</div>
-        <div class="card-bottom">
-          <span>${c.holder}</span>
-          <span class="card-network-mark">${(c.network || "").toUpperCase()}${c.isVirtual ? " · Virtual" : ""}</span>
-        </div>
-      </div>
-      <div class="card-info-row">
-        <div class="card-info-item"><p class="card-info-label">CVV</p><p class="card-info-value">${cvv}</p></div>
-        <div class="card-info-item"><p class="card-info-label">Status</p><p class="card-info-value" style="color:${pending ? "var(--gold-dark)" : c.frozen ? "var(--negative)" : "var(--positive)"};font-size:0.85rem;">${pending ? "Pending" : c.frozen ? "Frozen" : "Active"}</p></div>
-      </div>
-      <div class="card-actions">
-        <button class="ghost-btn" data-action="toggle-details" data-card="${c.id}" ${pending ? "disabled" : ""}>${c.revealed ? "Hide details" : "Show details"}</button>
-        <button class="ghost-btn" data-action="toggle-freeze" data-card="${c.id}" ${pending ? "disabled" : ""}>${c.frozen ? "Unfreeze card" : "Freeze card"}</button>
-      </div>
-    </div>
-  `;
+  const monthSelect = el("stmt-month-select");
+  monthSelect.innerHTML =
+    `<option value="all">All time</option>` +
+    months.map(([key, label]) => `<option value="${key}">${label}</option>`).join("");
+  monthSelect.value = state.month;
 }
 
-function renderCardGrids() {
-  const physical = ACCOUNT.cards.filter((c) => !c.isVirtual);
-  const virtual = ACCOUNT.cards.filter((c) => c.isVirtual);
+function renderStatement() {
+  const filtered = getFilteredTransactions();
 
-  el("physical-count").textContent = `${physical.length} card${physical.length === 1 ? "" : "s"}`;
-  el("virtual-count").textContent = `${virtual.length} card${virtual.length === 1 ? "" : "s"}`;
+  const monthOption = el("stmt-month-select").selectedOptions[0];
+  el("stmt-period-badge").textContent = monthOption ? monthOption.textContent : "All time";
 
-  const physGrid = el("physical-cards-grid");
-  physGrid.innerHTML = physical.length
-    ? physical.map(cardItemHtml).join("")
-    : `<div class="add-card-prompt" id="add-physical-prompt"><span class="plus-icon">${icon("plus", 22)}</span><p class="prompt-title">No physical card yet</p><p class="prompt-sub">Request one for ATM withdrawals and in-store payments.</p></div>`;
-
-  const virtGrid = el("virtual-cards-grid");
-  virtGrid.innerHTML =
-    virtual.map(cardItemHtml).join("") +
-    `<div class="add-card-prompt" id="add-virtual-prompt"><span class="plus-icon">${icon("plus", 22)}</span><p class="prompt-title">Create a virtual card</p><p class="prompt-sub">Instantly generate a virtual card for secure online payments.</p></div>`;
-
-  mountIcons(physGrid);
-  mountIcons(virtGrid);
-  wireCardActions();
-
-  const addPhysPrompt = el("add-physical-prompt");
-  if (addPhysPrompt) addPhysPrompt.addEventListener("click", () => openRequestPanel("physical"));
-  el("add-virtual-prompt").addEventListener("click", () => issueCard("virtual"));
+  renderTable(filtered);
+  renderFooter(filtered);
 }
 
-function wireCardActions() {
-  document.querySelectorAll('[data-action="toggle-details"]').forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const card = ACCOUNT.cards.find((c) => c.id === btn.dataset.card);
-      if (!card) return;
-      if (!card.fullPan) {
-        showToast("Full number not loaded for this card");
-        return;
-      }
-      card.revealed = !card.revealed;
-      renderCardGrids();
-    });
-  });
-  document.querySelectorAll('[data-action="toggle-freeze"]').forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const card = ACCOUNT.cards.find((c) => c.id === btn.dataset.card);
-      if (!card) return;
-      card.frozen = !card.frozen;
-      showToast(card.frozen ? "Card frozen" : "Card unfrozen");
-      renderCardGrids();
-    });
-  });
-}
-
-// ---------------------------------------------------------------------------
-// Card issuance (real write — see enable_multiple_cards.sql)
-// ---------------------------------------------------------------------------
-
-async function issueCard(cardType) {
-  const isVirtual = cardType === "virtual";
-  const last4 = randomDigits(4);
-  const fullPan = "4111" + randomDigits(8) + last4;
-  const expiryYears = isVirtual ? 3 : 4;
-  const expiry = (() => {
-    const d = new Date();
-    d.setFullYear(d.getFullYear() + expiryYears);
-    return String(d.getMonth() + 1).padStart(2, "0") + "/" + String(d.getFullYear()).slice(-2);
-  })();
-
-  const { data, error } = await sb
-    .from("cards")
-    .insert({
-      user_id: ACCOUNT.id,
-      card_network: "Visa",
-      card_type: isVirtual ? "virtual" : "debit",
-      masked_pan: `4111 **** **** ${last4}`,
-      full_pan: fullPan,
-      expiry,
-      card_holder_name: `${ACCOUNT.firstName} ${ACCOUNT.lastName}`,
-      status: isVirtual ? "active" : "pending",
-      is_virtual: isVirtual,
-      environment: "sandbox",
-    })
-    .select()
-    .single();
-
-  if (error) {
-    console.error("card issuance error:", error);
-    if (/limit reached/i.test(error.message)) {
-      showToast("Card limit reached for this demo account.");
-    } else {
-      showToast(`Couldn't create the card: ${error.message}`);
-    }
+function renderTable(rows) {
+  const body = el("stmt-table-body");
+  if (rows.length === 0) {
+    body.innerHTML = `<tr class="stmt-empty-row"><td colspan="5">No transactions match this selection.</td></tr>`;
     return;
   }
+  body.innerHTML = rows
+    .map((t) => {
+      const isIn = t.signedAmount >= 0;
+      return `
+        <tr>
+          <td>${t.dateLabel}</td>
+          <td>${t.label}${t.counterparty ? ` · ${t.counterparty}` : ""}</td>
+          <td><span class="stmt-category-tag">${categoryLabel(t)}</span></td>
+          <td>${t.walletType ? capitalize(t.walletType) : "—"}</td>
+          <td style="text-align:right;" class="stmt-amount ${isIn ? "amt-in" : "amt-out"}">${isIn ? "+" : "−"} ${formatMoney(t.amount, t.currency).replace(/^-/, "")}</td>
+        </tr>`;
+    })
+    .join("");
+}
 
-  ACCOUNT.cards.push({
-    id: data.id,
-    maskedPan: data.masked_pan,
-    fullPan: detectFullPan(data),
-    expiry: data.expiry,
-    holder: data.card_holder_name,
-    network: data.card_network,
-    isVirtual: data.is_virtual,
-    status: data.status,
-    frozen: false,
-    revealed: false,
+function renderFooter(rows) {
+  const currency = (rows[0] && rows[0].currency) || (Object.values(ACCOUNT.wallets)[0] || {}).currency || "USD";
+  const totalIn = rows.filter((t) => t.signedAmount >= 0).reduce((s, t) => s + t.amount, 0);
+  const totalOut = rows.filter((t) => t.signedAmount < 0).reduce((s, t) => s + t.amount, 0);
+
+  el("stmt-total-in").textContent = formatMoney(totalIn, currency);
+  el("stmt-total-out").textContent = formatMoney(totalOut, currency);
+  const net = totalIn - totalOut;
+  const netEl = el("stmt-net");
+  netEl.textContent = `${net < 0 ? "−" : ""}${formatMoney(Math.abs(net), currency)}`;
+  netEl.className = "stmt-footer-value" + (net > 0 ? " in" : net < 0 ? " out" : "");
+
+  const relevantWallets = state.account === "all" ? Object.values(ACCOUNT.wallets) : [ACCOUNT.wallets[state.account]].filter(Boolean);
+  const currentBalance = relevantWallets.reduce((s, w) => s + w.balance, 0);
+  const balanceCurrency = relevantWallets[0] ? relevantWallets[0].currency : currency;
+  el("stmt-current-balance").textContent = formatMoney(currentBalance, balanceCurrency);
+}
+
+// ---------------------------------------------------------------------------
+// Export / print
+// ---------------------------------------------------------------------------
+
+function csvEscape(value) {
+  const str = String(value == null ? "" : value);
+  return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+}
+
+function downloadStatementCsv() {
+  const rows = getFilteredTransactions();
+  const header = ["Date", "Description", "Category", "Account", "Amount", "Currency", "Status"];
+  const lines = [header.join(",")];
+  rows.forEach((t) => {
+    lines.push(
+      [
+        t.dateLabel,
+        t.label + (t.counterparty ? ` - ${t.counterparty}` : ""),
+        categoryLabel(t),
+        t.walletType ? capitalize(t.walletType) : "",
+        (t.signedAmount >= 0 ? "" : "-") + t.amount.toFixed(2),
+        t.currency,
+        t.status,
+      ]
+        .map(csvEscape)
+        .join(",")
+    );
   });
-  showToast(isVirtual ? "New virtual card created" : "Physical card requested — arriving in 5–7 business days");
-  renderCardGrids();
-}
-
-// ---------------------------------------------------------------------------
-// Request panel
-// ---------------------------------------------------------------------------
-
-function openRequestPanel(defaultType) {
-  selectedRequestType = defaultType || "virtual";
-  document.querySelectorAll(".type-option").forEach((o) => o.classList.toggle("selected", o.dataset.type === selectedRequestType));
-  el("request-panel").hidden = false;
-  el("request-panel").scrollIntoView({ behavior: "smooth", block: "nearest" });
-}
-function closeRequestPanel() {
-  el("request-panel").hidden = true;
+  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const periodPart = state.month === "all" ? "all-time" : state.month;
+  a.href = url;
+  a.download = `hallmark-statement-${periodPart}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  showToast(rows.length ? "Statement downloaded" : "Downloaded (no transactions in this selection)");
 }
 
 // ---------------------------------------------------------------------------
@@ -423,38 +412,30 @@ async function init() {
   el("sidebar-backdrop").addEventListener("click", closeSidebar);
 
   document.querySelectorAll(".nav-item[data-nav]").forEach((btn) => {
-    if (btn.dataset.nav === "cards") return;
+    if (btn.dataset.nav === "statements") return; // already here
     if (btn.dataset.nav === "dashboard") { btn.addEventListener("click", () => (window.location.href = "dashboard.html")); return; }
     if (btn.dataset.nav === "accounts") { btn.addEventListener("click", () => (window.location.href = "accounts.html")); return; }
     if (btn.dataset.nav === "transfers") { btn.addEventListener("click", () => (window.location.href = "transfers.html")); return; }
     if (btn.dataset.nav === "payments") { btn.addEventListener("click", () => (window.location.href = "payments.html")); return; }
+    if (btn.dataset.nav === "cards") { btn.addEventListener("click", () => (window.location.href = "cards.html")); return; }
     if (btn.dataset.nav === "settings") { btn.addEventListener("click", () => (window.location.href = "settings.html")); return; }
     btn.addEventListener("click", () => { showToast(`${btn.textContent.trim()} — coming soon in a later phase`); closeSidebar(); });
   });
-  document.querySelectorAll("[data-coming-soon]").forEach((elm) => {
-    elm.addEventListener("click", () => showToast(`${elm.dataset.comingSoon} — coming soon in a later phase`));
-  });
   el("btn-explore").addEventListener("click", () => showToast("Explore Opportunities — coming soon in a later phase"));
 
-  el("btn-toggle-all-details").addEventListener("click", () => {
-    allDetailsVisible = !allDetailsVisible;
-    ACCOUNT.cards.forEach((c) => { if (c.fullPan && c.status !== "pending") c.revealed = allDetailsVisible; });
-    el("btn-toggle-all-details").textContent = allDetailsVisible ? "Hide all details" : "Show all details";
-    renderCardGrids();
-  });
-
-  el("btn-request-card").addEventListener("click", () => openRequestPanel("virtual"));
-  el("btn-cancel-request").addEventListener("click", closeRequestPanel);
-  document.querySelectorAll(".type-option").forEach((opt) => {
-    opt.addEventListener("click", () => {
-      selectedRequestType = opt.dataset.type;
-      document.querySelectorAll(".type-option").forEach((o) => o.classList.toggle("selected", o === opt));
+  document.querySelectorAll(".stmt-tab").forEach((tab) => {
+    tab.addEventListener("click", () => {
+      document.querySelectorAll(".stmt-tab").forEach((t) => t.classList.remove("active"));
+      tab.classList.add("active");
+      state.tab = tab.dataset.type;
+      renderStatement();
     });
   });
-  el("btn-confirm-request").addEventListener("click", () => {
-    closeRequestPanel();
-    issueCard(selectedRequestType);
-  });
+  el("stmt-account-select").addEventListener("change", (e) => { state.account = e.target.value; renderStatement(); });
+  el("stmt-month-select").addEventListener("change", (e) => { state.month = e.target.value; renderStatement(); });
+
+  el("btn-stmt-download").addEventListener("click", downloadStatementCsv);
+  el("btn-stmt-print").addEventListener("click", () => window.print());
 
   const ok = await resolveSession();
   if (!ok) return;

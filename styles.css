@@ -185,6 +185,7 @@ a { color: inherit; }
    ========================================================================= */
 
 .field { margin-bottom: 14px; display: flex; flex-direction: column; gap: 6px; }
+.field[hidden] { display: none; }
 .field label { font-size: 0.85rem; color: var(--muted); }
 
 .field input, .field select {
@@ -196,6 +197,10 @@ a { color: inherit; }
 }
 .field input:focus, .field select:focus { border-color: var(--gold); }
 .field input:disabled { background: var(--paper); color: var(--muted); cursor: not-allowed; }
+.field input[readonly] { background: var(--paper); cursor: default; }
+.field input.lookup-found { border-color: var(--positive); color: var(--positive); font-weight: 600; }
+.field input.lookup-not-found { border-color: var(--negative); }
+.field input.lookup-not-found::placeholder { color: var(--negative); }
 
 .form-error {
   color: var(--negative);

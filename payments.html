@@ -140,11 +140,13 @@
                 <div class="field" id="wb-saved-field"><label for="wb-payee">Payee</label><select id="wb-payee"></select></div>
 
                 <div id="wb-new-fields" hidden>
-                  <div class="field"><label for="wb-new-name">Recipient name</label><input id="wb-new-name" type="text" placeholder="e.g. Jordan Blake" /></div>
                   <div class="field">
                     <label for="wb-new-account">Account number</label>
                     <input id="wb-new-account" type="text" inputmode="numeric" placeholder="10-digit account number" />
-                    <span class="hint" id="wb-lookup-status"></span>
+                  </div>
+                  <div class="field">
+                    <label for="wb-new-name">Recipient name</label>
+                    <input id="wb-new-name" type="text" placeholder="Enter an account number above" readonly />
                   </div>
                   <label class="checkbox-row"><input type="checkbox" id="wb-save-payee" checked /> Save this payee for next time</label>
                 </div>
@@ -179,7 +181,7 @@
                 <div class="field" id="ob-saved-field"><label for="ob-payee">Payee</label><select id="ob-payee"></select></div>
 
                 <div id="ob-new-fields" hidden>
-                  <div class="field"><label for="ob-new-name">Recipient name</label><input id="ob-new-name" type="text" placeholder="e.g. Acme Corp" /></div>
+                  <div class="field"><label for="ob-new-name">Recipient name (optional)</label><input id="ob-new-name" type="text" placeholder="e.g. Acme Corp — shown in your statement" /></div>
                   <div class="field"><label for="ob-new-account">Account number</label><input id="ob-new-account" type="text" inputmode="numeric" placeholder="Account number" /></div>
                   <div class="field"><label for="ob-new-routing">Routing number</label><input id="ob-new-routing" type="text" inputmode="numeric" placeholder="9-digit routing number" /></div>
                   <label class="checkbox-row"><input type="checkbox" id="ob-save-payee" checked /> Save this payee for next time</label>
@@ -228,18 +230,14 @@
             <section class="side-panel transfer-form-panel">
               <p class="side-panel-title">Add a payee</p>
               <form id="add-payee-form">
-                <div class="field"><label for="np-name">Payee name</label><input id="np-name" type="text" placeholder="e.g. Jordan Blake" required /></div>
-
                 <div class="transfer-type-toggle">
                   <button type="button" class="transfer-type-btn active" data-payee-bank="within">Within the bank</button>
                   <button type="button" class="transfer-type-btn" data-payee-bank="other">Other bank</button>
                 </div>
 
-                <div class="field"><label for="np-account">Account number</label>
-                  <input id="np-account" type="text" inputmode="numeric" placeholder="Account number" required />
-                  <span class="hint" id="np-lookup-status"></span>
-                </div>
+                <div class="field"><label for="np-account">Account number</label><input id="np-account" type="text" inputmode="numeric" placeholder="Account number" required /></div>
                 <div class="field" id="np-routing-field"><label for="np-routing">Routing number</label><input id="np-routing" type="text" inputmode="numeric" placeholder="9-digit routing number" /></div>
+                <div class="field"><label for="np-name">Payee name</label><input id="np-name" type="text" placeholder="Enter an account number above" readonly required /></div>
 
                 <p class="form-error" id="np-error" hidden></p>
                 <button class="submit-btn" type="button" id="btn-add-payee" style="width:auto;">Add payee</button>

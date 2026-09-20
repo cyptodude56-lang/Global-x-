@@ -223,6 +223,14 @@ function renderAll() {
   loadFxTicker();
 }
 
+async function markAllNotificationsRead() {
+  if (!ACCOUNT.notifications.some((n) => !n.isRead)) return;
+  ACCOUNT.notifications.forEach((n) => { n.isRead = true; });
+  renderNotifications();
+  const { error } = await sb.from("notifications").update({ is_read: true }).eq("user_id", CURRENT_USER_ID).eq("is_read", false);
+  if (error) console.warn("Couldn't mark notifications as read:", error);
+}
+
 function renderNotifications() {
   const unread = ACCOUNT.notifications.filter((n) => !n.isRead).length;
   const badge = el("bell-badge");
@@ -357,7 +365,9 @@ async function init() {
   el("btn-bell").addEventListener("click", (e) => {
     e.stopPropagation();
     const dd = el("notif-dropdown");
-    dd.hidden = !dd.hidden;
+    const wasOpen = !dd.hidden;
+    dd.hidden = wasOpen;
+    if (wasOpen) markAllNotificationsRead();
   });
 
   el("user-menu-btn").addEventListener("click", (e) => {
@@ -369,7 +379,10 @@ async function init() {
 
   document.addEventListener("click", (e) => {
     const notifDd = el("notif-dropdown");
-    if (!notifDd.hidden && !notifDd.contains(e.target) && e.target !== el("btn-bell")) notifDd.hidden = true;
+    if (!notifDd.hidden && !notifDd.contains(e.target) && e.target !== el("btn-bell")) {
+      notifDd.hidden = true;
+      markAllNotificationsRead();
+    }
     const userDd = el("user-dropdown");
     if (!userDd.hidden && !userDd.contains(e.target) && !el("user-menu-btn").contains(e.target)) {
       userDd.hidden = true;

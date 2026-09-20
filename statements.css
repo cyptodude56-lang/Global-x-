@@ -1,0 +1,245 @@
+/* ---------------------------------------------------------------------------
+   Hallmark — Statements page.
+   Loaded after styles.css, so it reuses that file's :root variables
+   (--ink, --gold, --gold-soft, --paper, --surface, --positive, --negative,
+   --muted, --line, --font-display, --font-ui, --font-mono) rather than
+   redefining them. Kept in its own file instead of appended to styles.css
+   so it's a drop-in addition — nothing in the existing stylesheet changes.
+   Visually adapted from a reference "clean statement" mockup (filter tabs,
+   quiet table, subtle fade-in rows) into Hallmark's serif/gold-accent
+   language instead of that reference's blue-gray palette.
+   --------------------------------------------------------------------- */
+
+.statement-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 24px 26px 20px;
+}
+
+.statement-card__header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 16px;
+  margin-bottom: 18px;
+}
+
+.statement-card__title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.statement-card__title {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.statement-card__badge {
+  background: var(--gold-soft);
+  color: var(--ink);
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 3px 11px;
+  border-radius: 999px;
+}
+
+.statement-card__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.stmt-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 13px;
+  font-size: 0.82rem;
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.stmt-action-btn:hover { border-color: var(--gold); background: var(--surface); }
+.stmt-action-btn:active { transform: scale(0.98); }
+
+.statement-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.stmt-tabs {
+  display: flex;
+  gap: 2px;
+  background: var(--paper);
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+}
+
+.stmt-tab {
+  background: none;
+  border: none;
+  padding: 7px 16px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.stmt-tab:hover { color: var(--ink); }
+.stmt-tab.active {
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.stmt-selects {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.stmt-selects select {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 0.8rem;
+  color: var(--ink);
+  background: var(--surface);
+}
+.stmt-selects select:focus { border-color: var(--gold); outline: none; }
+
+.stmt-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.stmt-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 560px;
+}
+
+.stmt-table th {
+  text-align: left;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  padding: 0 8px 10px 0;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.stmt-table td {
+  padding: 13px 8px 13px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.86rem;
+  color: var(--ink);
+  vertical-align: middle;
+}
+
+.stmt-table tbody tr {
+  animation: stmtRowIn 0.25s ease forwards;
+  opacity: 0;
+  transition: background 0.15s ease;
+}
+.stmt-table tbody tr:hover { background: var(--paper); }
+.stmt-table tbody tr:nth-child(n+9) { animation-delay: 0s; } /* cap stagger past 8 rows */
+.stmt-table tbody tr:nth-child(1) { animation-delay: 0.02s; }
+.stmt-table tbody tr:nth-child(2) { animation-delay: 0.04s; }
+.stmt-table tbody tr:nth-child(3) { animation-delay: 0.06s; }
+.stmt-table tbody tr:nth-child(4) { animation-delay: 0.08s; }
+.stmt-table tbody tr:nth-child(5) { animation-delay: 0.10s; }
+.stmt-table tbody tr:nth-child(6) { animation-delay: 0.12s; }
+.stmt-table tbody tr:nth-child(7) { animation-delay: 0.14s; }
+.stmt-table tbody tr:nth-child(8) { animation-delay: 0.16s; }
+
+@keyframes stmtRowIn {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: none; }
+}
+
+.stmt-category-tag {
+  display: inline-block;
+  padding: 3px 11px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+.stmt-table tbody tr:hover .stmt-category-tag {
+  border-color: var(--gold);
+  color: var(--ink);
+}
+
+.stmt-amount { font-family: var(--font-mono); font-weight: 600; white-space: nowrap; }
+.stmt-amount.amt-in { color: var(--positive); }
+.stmt-amount.amt-out { color: var(--negative); }
+
+.stmt-empty-row td {
+  text-align: center;
+  color: var(--muted);
+  padding: 40px 0;
+  font-size: 0.85rem;
+}
+
+.stmt-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 28px;
+  padding-top: 16px;
+  margin-top: 4px;
+  border-top: 1px solid var(--line);
+}
+
+.stmt-footer-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: flex-end;
+}
+.stmt-footer-label { font-size: 0.72rem; color: var(--muted); }
+.stmt-footer-value { font-family: var(--font-mono); font-weight: 600; font-size: 0.98rem; color: var(--ink); }
+.stmt-footer-value.in { color: var(--positive); }
+.stmt-footer-value.out { color: var(--negative); }
+
+/* Print: statement only, chrome hidden */
+@media print {
+  .fx-ticker, .sidebar, .topbar-dark, .app-footer, .toast, .page-header,
+  .statement-card__actions, .stmt-tabs, .stmt-selects {
+    display: none !important;
+  }
+  .app-shell { display: block; }
+  .dashboard-content { padding: 0; }
+  .statement-card { border: none; box-shadow: none; padding: 0; }
+}
+
+@media (max-width: 640px) {
+  .statement-card__header { flex-direction: column; align-items: flex-start; }
+  .statement-controls { flex-direction: column; align-items: stretch; }
+  .stmt-selects select { flex: 1; }
+  .stmt-footer { justify-content: flex-start; gap: 18px; }
+  .stmt-footer-stat { align-items: flex-start; }
+}

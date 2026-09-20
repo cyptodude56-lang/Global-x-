@@ -8,7 +8,7 @@
 // Supabase's own session (not sessionStorage) is what dashboard.html reads.
 //
 // The 5-minute countdown below is a UI convenience, not the real security
-// boundary, so the actual expiry is enforced server-side by Supabase's own
+// boundary — the actual expiry is enforced server-side by Supabase's own
 // "Email OTP Expiration" setting (Authentication → Providers → Email),
 // which needs to be set to 300 seconds too so the two actually match. If
 // they drift out of sync, the server's setting is what actually governs;
@@ -258,13 +258,32 @@ el("verify-code-form").addEventListener("submit", async (e) => {
 
   if (error || !data.session) {
     console.error("verifyOtp error:", error);
-    showFormError(error ? `That code didn't work: ${error.message}` : "That code didn't work, check it and try again.");
+    showFormError(error ? `That code didn't work: ${error.message}` : "That code didn't work — check it and try again.");
     return;
   }
 
   stopCodeTimer();
+  await recordLoginNotification(data.session.user.id);
   window.location.href = "dashboard.html";
 });
+
+async function recordLoginNotification(authUserId) {
+  try {
+    const { data: userRow } = await sb.from("users").select("id, preferences").eq("auth_user_id", authUserId).single();
+    if (!userRow) return;
+    const prefs = userRow.preferences || {};
+    if (prefs.notifSecurity === false) return; // respects the Settings > Notifications toggle
+    await sb.from("notifications").insert({
+      user_id: userRow.id,
+      type: "security",
+      message: "You signed in to Hallmark.",
+      is_read: false,
+      environment: "sandbox",
+    });
+  } catch (err) {
+    console.warn("Couldn't record login notification (login still proceeds):", err);
+  }
+}
 
 el("back-to-email").addEventListener("click", () => {
   stopCodeTimer();
@@ -272,7 +291,7 @@ el("back-to-email").addEventListener("click", () => {
   el("request-code-form").hidden = false;
   el("toggle-to-signup-line").hidden = false;
   el("login-title").textContent = "Welcome back";
-  el("login-sub").textContent = "Log in with your email. We'll send you a one-time code.";
+  el("login-sub").textContent = "Log in with your email — we'll send you a one-time code.";
   hideFormError();
 });
 

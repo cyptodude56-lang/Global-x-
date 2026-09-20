@@ -90,6 +90,7 @@ function capitalize(s) {
 }
 
 let SHOW_CENTS = true;
+let NOTIFY_TRANSACTIONS = true;
 function formatMoney(amount, currency) {
   const validCurrency = typeof currency === "string" && /^[A-Za-z]{3}$/.test(currency) ? currency.toUpperCase() : null;
   return new Intl.NumberFormat("en-US", {
@@ -194,6 +195,7 @@ async function loadData() {
   const p = profilesRes.data[0] || {};
   SHOW_CENTS = !(u && u.preferences && u.preferences.showCents === false);
   DEFAULT_TRANSFER_ACCOUNT = (u && u.preferences && u.preferences.defaultTransferAccount) || null;
+  NOTIFY_TRANSACTIONS = !(u && u.preferences && u.preferences.notifTransactions === false);
 
   ACCOUNT = {
     id: u.id,
@@ -253,6 +255,14 @@ function renderAll() {
   renderForm();
   renderHistory();
   loadFxTicker();
+}
+
+async function markAllNotificationsRead() {
+  if (!ACCOUNT.notifications.some((n) => !n.isRead)) return;
+  ACCOUNT.notifications.forEach((n) => { n.isRead = true; });
+  renderNotifications();
+  const { error } = await sb.from("notifications").update({ is_read: true }).eq("user_id", CURRENT_USER_ID).eq("is_read", false);
+  if (error) console.warn("Couldn't mark notifications as read:", error);
 }
 
 function renderNotifications() {
@@ -338,6 +348,14 @@ function renderHistory() {
   state.highlightIds = [];
 }
 
+async function createNotification(type, message) {
+  if (type === "transaction" && !NOTIFY_TRANSACTIONS) return;
+  const { error } = await sb.from("notifications").insert({
+    user_id: CURRENT_USER_ID, type, message, is_read: false, environment: "sandbox",
+  });
+  if (error) console.warn(`Couldn't create ${type} notification (action still proceeds):`, error);
+}
+
 function addHistory(entry) {
   ACCOUNT.history.unshift(entry);
   state.highlightIds.push(entry.id);
@@ -367,7 +385,10 @@ async function init() {
 
   el("btn-bell").addEventListener("click", (e) => {
     e.stopPropagation();
-    el("notif-dropdown").hidden = !el("notif-dropdown").hidden;
+    const dd = el("notif-dropdown");
+    const wasOpen = !dd.hidden;
+    dd.hidden = wasOpen;
+    if (wasOpen) markAllNotificationsRead();
   });
 
   el("user-menu-btn").addEventListener("click", (e) => {
@@ -379,7 +400,10 @@ async function init() {
 
   document.addEventListener("click", (e) => {
     const notifDd = el("notif-dropdown");
-    if (!notifDd.hidden && !notifDd.contains(e.target) && e.target !== el("btn-bell")) notifDd.hidden = true;
+    if (!notifDd.hidden && !notifDd.contains(e.target) && e.target !== el("btn-bell")) {
+      notifDd.hidden = true;
+      markAllNotificationsRead();
+    }
     const userDd = el("user-dropdown");
     if (!userDd.hidden && !userDd.contains(e.target) && !el("user-menu-btn").contains(e.target)) {
       userDd.hidden = true;
@@ -451,7 +475,7 @@ async function init() {
     if (state.transferType === "internal") updateToAccountNote();
   });
 
-  el("transfer-form").addEventListener("submit", (e) => {
+  el("transfer-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     hideFormError();
     const amount = parseFloat(el("tf-amount").value);
@@ -462,6 +486,7 @@ async function init() {
 
     const fromType = el("tf-from").value;
     const fromWallet = ACCOUNT.wallets[fromType];
+    let notifMessage = null;
 
     if (state.transferType === "internal") {
       const toType = el("transfer-form").dataset.to;
@@ -481,6 +506,7 @@ async function init() {
       addHistory({ id: newTxId(), label: "Internal transfer", counterparty: `To ${capitalize(toType)}`, amount, currency: fromWallet.currency, sign: "-", date: "Just now", status: "Completed", ref: null, walletLabel: capitalize(fromType) });
       addHistory({ id: newTxId(), label: "Internal transfer", counterparty: `From ${capitalize(fromType)}`, amount, currency: toWallet.currency, sign: "+", date: "Just now", status: "Completed", ref: null, walletLabel: capitalize(toType) });
       showToast("Transfer complete");
+      notifMessage = `You transferred ${formatMoney(amount, fromWallet.currency)} from ${capitalize(fromType)} to ${capitalize(toType)}.`;
     } else {
       const benId = el("tf-payee").value;
       const ben = ACCOUNT.beneficiaries.find((b) => b.id === benId);
@@ -497,7 +523,10 @@ async function init() {
       fromWallet.available -= amount;
       addHistory({ id: newTxId(), label: "Sent to beneficiary", counterparty: memo ? `${ben.name} — ${memo}` : ben.name, amount, currency: fromWallet.currency, sign: "-", date: "Just now", status: "Completed", ref: null, walletLabel: capitalize(fromType) });
       showToast(`Sent to ${ben.name}`);
+      notifMessage = `You sent ${formatMoney(amount, fromWallet.currency)} to ${ben.name}.`;
     }
+
+    if (notifMessage) await createNotification("transaction", notifMessage);
 
     el("tf-amount").value = "";
     if (el("tf-memo")) el("tf-memo").value = "";
