@@ -1866,3 +1866,140 @@ a { color: inherit; }
   .stmt-footer { justify-content: flex-start; gap: 18px; }
   .stmt-footer-stat { align-items: flex-start; }
 }
+/* ---------------------------------------------------------------------------
+   Hallmark — login/sign-in page theme.
+   Loaded only by index.html, after styles.css. Everything here is scoped
+   under .auth-hero (added only to index.html's <main class="login-page">)
+   so confirm-email.html, complete-profile.html, and kyc-placeholder.html —
+   which reuse the same base .login-page / .login-panel classes — are
+   completely unaffected. Reuses styles.css's --gold / --ink / --gold-soft
+   tokens rather than inventing a new palette, so this stays "the same
+   colors, dialed up," not a different brand.
+   --------------------------------------------------------------------- */
+
+#bg-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  display: block;
+  background: var(--ink);
+}
+
+.auth-hero {
+  position: relative;
+  z-index: 1;
+  background: transparent;
+}
+
+.auth-hero .fx-ticker {
+  position: relative;
+  z-index: 2;
+  background: rgba(16, 21, 31, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-bottom: 1px solid rgba(201, 162, 39, 0.22);
+}
+
+/* The persistent, transparent glass container */
+.auth-hero .login-panel {
+  position: relative;
+  z-index: 2;
+  background: rgba(16, 21, 31, 0.4);
+  backdrop-filter: blur(11px) saturate(160%);
+  -webkit-backdrop-filter: blur(11px) saturate(160%);
+  border: 1.5px solid rgba(201, 162, 39, 0.32);
+  border-radius: 26px;
+  box-shadow:
+    0 30px 60px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 1px rgba(201, 162, 39, 0.1);
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+.auth-hero .login-panel:hover {
+  border-color: rgba(201, 162, 39, 0.5);
+  box-shadow:
+    0 35px 70px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 1px rgba(201, 162, 39, 0.18);
+}
+
+.auth-hero .login-brand-name {
+  background: linear-gradient(135deg, var(--gold-soft) 0%, var(--gold) 45%, var(--gold-dark) 85%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.auth-hero .login-brand-sub {
+  letter-spacing: 0.16em;
+}
+
+.auth-hero .login-title {
+  color: #fdf8ea;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.4);
+}
+
+.auth-hero .login-sub {
+  color: rgba(230, 222, 200, 0.75);
+}
+
+.auth-hero .field label {
+  color: rgba(233, 217, 168, 0.85);
+  letter-spacing: 0.03em;
+}
+
+.auth-hero .field input,
+.auth-hero .field select {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(201, 162, 39, 0.3);
+  color: #f5f0e0;
+  backdrop-filter: blur(4px);
+}
+.auth-hero .field input::placeholder {
+  color: rgba(220, 210, 180, 0.4);
+}
+.auth-hero .field input:focus,
+.auth-hero .field select:focus {
+  border-color: rgba(201, 162, 39, 0.85);
+  background: rgba(20, 27, 44, 0.65);
+  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.16);
+}
+
+.auth-hero .submit-btn {
+  background: linear-gradient(145deg, var(--gold) 0%, var(--gold-dark) 100%);
+  color: var(--ink);
+  border: 1px solid rgba(255, 236, 179, 0.5);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  box-shadow: 0 10px 24px -6px rgba(201, 162, 39, 0.45);
+  transition: box-shadow 0.2s ease, transform 0.15s ease, background 0.2s ease;
+}
+.auth-hero .submit-btn:hover {
+  background: linear-gradient(145deg, var(--gold-soft) 0%, var(--gold) 100%);
+  box-shadow: 0 14px 30px -6px rgba(201, 162, 39, 0.6);
+  transform: translateY(-1px);
+}
+.auth-hero .submit-btn:active { transform: translateY(0) scale(0.99); }
+
+.auth-hero .auth-toggle-line,
+.auth-hero .helper-text {
+  color: rgba(214, 205, 180, 0.7);
+}
+
+.auth-hero .form-error {
+  color: #f2a4a0;
+}
+
+.auth-hero .security-note {
+  margin-top: 1.4rem;
+  font-size: 0.7rem;
+  text-align: center;
+  letter-spacing: 0.05em;
+  color: rgba(200, 190, 165, 0.45);
+}
+
+@media (max-width: 480px) {
+  .auth-hero .login-panel {
+    border-radius: 22px;
+  }
+}
