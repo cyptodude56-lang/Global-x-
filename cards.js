@@ -430,12 +430,12 @@ async function init() {
     if (btn.dataset.nav === "payments") { btn.addEventListener("click", () => (window.location.href = "payments.html")); return; }
     if (btn.dataset.nav === "statements") { btn.addEventListener("click", () => (window.location.href = "statements.html")); return; }
     if (btn.dataset.nav === "settings") { btn.addEventListener("click", () => (window.location.href = "settings.html")); return; }
-    btn.addEventListener("click", () => { showToast(`${btn.textContent.trim()} — coming soon in a later phase`); closeSidebar(); });
+    btn.addEventListener("click", () => { showToast(`${btn.textContent.trim()} coming soon in a later phase`); closeSidebar(); });
   });
   document.querySelectorAll("[data-coming-soon]").forEach((elm) => {
-    elm.addEventListener("click", () => showToast(`${elm.dataset.comingSoon} — coming soon in a later phase`));
+    elm.addEventListener("click", () => showToast(`${elm.dataset.comingSoon} coming soon in a later phase`));
   });
-  el("btn-explore").addEventListener("click", () => showToast("Explore Opportunities — coming soon in a later phase"));
+  el("btn-explore").addEventListener("click", () => showToast("Explore Opportunities coming soon in a later phase"));
 
   el("btn-toggle-all-details").addEventListener("click", () => {
     allDetailsVisible = !allDetailsVisible;

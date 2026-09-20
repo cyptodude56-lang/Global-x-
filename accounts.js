@@ -429,16 +429,16 @@ async function init() {
       return;
     }
     btn.addEventListener("click", () => {
-      showToast(`${btn.textContent.trim()} — coming soon in a later phase`);
+      showToast(`${btn.textContent.trim()} coming soon in a later phase`);
       closeSidebar();
     });
   });
 
   document.querySelectorAll("[data-coming-soon]").forEach((elm) => {
-    elm.addEventListener("click", () => showToast(`${elm.dataset.comingSoon} — coming soon in a later phase`));
+    elm.addEventListener("click", () => showToast(`${elm.dataset.comingSoon} coming soon in a later phase`));
   });
 
-  el("btn-explore").addEventListener("click", () => showToast("Explore Opportunities — coming soon in a later phase"));
+  el("btn-explore").addEventListener("click", () => showToast("Explore Opportunities coming soon in a later phase"));
 
   const ok = await resolveSession();
   if (!ok) return;
