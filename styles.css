@@ -1891,36 +1891,51 @@ a { color: inherit; }
   position: relative;
   z-index: 1;
   background: transparent;
+  justify-content: flex-start;
+  padding-left: 64px;
 }
 
-.auth-hero .fx-ticker {
-  position: relative;
-  z-index: 2;
-  background: rgba(16, 21, 31, 0.55);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  border-bottom: 1px solid rgba(201, 162, 39, 0.22);
+@media (max-width: 760px) {
+  .auth-hero {
+    justify-content: center;
+    padding-left: 20px;
+  }
 }
 
-/* The persistent, transparent glass container */
+/* Dashboard-matching treatment: the same dark ink gradient plus the faint
+   repeating gold hairline pattern used on the dashboard's balance card
+   (see .balance-card / .balance-card::after in styles.css), so this reads
+   as the same product rather than a separate "glass" look. Left mostly
+   opaque like that card is — now that the panel sits to the side instead
+   of centered over the animation, opacity no longer needs to carry the
+   "see the animation" job on its own. */
 .auth-hero .login-panel {
   position: relative;
   z-index: 2;
-  background: rgba(16, 21, 31, 0.4);
-  backdrop-filter: blur(11px) saturate(160%);
-  -webkit-backdrop-filter: blur(11px) saturate(160%);
-  border: 1.5px solid rgba(201, 162, 39, 0.32);
-  border-radius: 26px;
-  box-shadow:
-    0 30px 60px rgba(0, 0, 0, 0.5),
-    inset 0 0 0 1px rgba(201, 162, 39, 0.1);
-  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(16, 21, 31, 0.92) 0%, rgba(27, 35, 56, 0.92) 100%);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid var(--line-dark);
+  border-radius: 10px;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.4);
+  transition: border-color 0.2s ease;
+}
+.auth-hero .login-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    115deg,
+    rgba(201, 162, 39, 0.07) 0px,
+    rgba(201, 162, 39, 0.07) 1px,
+    transparent 1px,
+    transparent 14px
+  );
+  pointer-events: none;
 }
 .auth-hero .login-panel:hover {
-  border-color: rgba(201, 162, 39, 0.5);
-  box-shadow:
-    0 35px 70px rgba(0, 0, 0, 0.55),
-    inset 0 0 0 1px rgba(201, 162, 39, 0.18);
+  border-color: rgba(201, 162, 39, 0.4);
 }
 
 .auth-hero .login-brand-name {
@@ -1950,36 +1965,28 @@ a { color: inherit; }
 
 .auth-hero .field input,
 .auth-hero .field select {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(201, 162, 39, 0.3);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   color: #f5f0e0;
-  backdrop-filter: blur(4px);
 }
 .auth-hero .field input::placeholder {
-  color: rgba(220, 210, 180, 0.4);
+  color: rgba(220, 210, 180, 0.42);
 }
 .auth-hero .field input:focus,
 .auth-hero .field select:focus {
-  border-color: rgba(201, 162, 39, 0.85);
-  background: rgba(20, 27, 44, 0.65);
-  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.16);
+  border-color: var(--gold);
+  background: rgba(255, 255, 255, 0.12);
 }
 
+/* Same flat gold/gold-dark CTA convention as .goals-banner-btn and the
+   sidebar promo elsewhere in the app — not a separate button style. */
 .auth-hero .submit-btn {
-  background: linear-gradient(145deg, var(--gold) 0%, var(--gold-dark) 100%);
+  background: var(--gold);
   color: var(--ink);
-  border: 1px solid rgba(255, 236, 179, 0.5);
   font-weight: 600;
-  letter-spacing: 0.03em;
-  box-shadow: 0 10px 24px -6px rgba(201, 162, 39, 0.45);
-  transition: box-shadow 0.2s ease, transform 0.15s ease, background 0.2s ease;
+  letter-spacing: 0.02em;
 }
-.auth-hero .submit-btn:hover {
-  background: linear-gradient(145deg, var(--gold-soft) 0%, var(--gold) 100%);
-  box-shadow: 0 14px 30px -6px rgba(201, 162, 39, 0.6);
-  transform: translateY(-1px);
-}
-.auth-hero .submit-btn:active { transform: translateY(0) scale(0.99); }
+.auth-hero .submit-btn:hover { background: var(--gold-dark); }
 
 .auth-hero .auth-toggle-line,
 .auth-hero .helper-text {

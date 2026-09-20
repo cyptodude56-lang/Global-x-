@@ -32,7 +32,8 @@
   const RATTLE_DURATION = 3200; // fast ripple + chain movement
   const LOGO_DURATION = 2000; // "H" mark phase
   const TEXT_DURATION = 2200; // wordmark reveal phase
-  // after that: slow, permanent "float" phase
+  const FLOAT_HOLD_DURATION = 4500; // slow float, wordmark held, before looping
+  const TOTAL_CYCLE = RATTLE_DURATION + LOGO_DURATION + TEXT_DURATION + FLOAT_HOLD_DURATION;
 
   const PANEL_COUNT = 11;
   let panels = [];
@@ -151,7 +152,8 @@
 
   function drawHLogo(progress) {
     const alpha = Math.min(1, progress * 1.5);
-    const centerX = width / 2;
+    const anchorX = width > 760 ? width * 0.72 : width / 2;
+    const centerX = anchorX;
     const centerY = height / 2;
     const hWidth = Math.min(width * 0.35, 300);
     const hHeight = Math.min(height * 0.3, 250);
@@ -180,15 +182,45 @@
     ctx.shadowBlur = 0;
   }
 
+  function drawLetterSpacedText(text, cx, cy, spacing) {
+    if ("letterSpacing" in ctx) {
+      ctx.letterSpacing = `${spacing}px`;
+      ctx.fillText(text, cx, cy);
+    } else {
+      const widths = [];
+      let totalWidth = -spacing;
+      for (const ch of text) {
+        const w = ctx.measureText(ch).width;
+        widths.push(w);
+        totalWidth += w + spacing;
+      }
+      let x = cx - totalWidth / 2;
+      let i = 0;
+      for (const ch of text) {
+        const w = widths[i++];
+        ctx.fillText(ch, x + w / 2, cy);
+        x += w + spacing;
+      }
+    }
+  }
+
   function drawBankText(progress) {
     const alpha = Math.min(1, progress * 1.8);
     ctx.save();
-    const fontSize = Math.min(width * 0.05, 56);
-    ctx.font = `600 ${fontSize}px 'IBM Plex Sans', sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
-    const grad = ctx.createLinearGradient(width / 2 - 300, height / 2 - 50, width / 2 + 300, height / 2 + 50);
+    // Right-anchored on wide screens (matches the H mark's position above,
+    // and stays clear of the login panel anchored to the left); centered
+    // on narrow screens where there's no spare width to place it aside.
+    const anchorX = width > 760 ? width * 0.72 : width / 2;
+    const centerY = height / 2;
+
+    const titleSize = Math.min(width * 0.06, 64);
+    const subSize = Math.min(width * 0.024, 26);
+    const lineGap = titleSize * 0.78;
+
+    const grad = ctx.createLinearGradient(anchorX - 220, centerY - 70, anchorX + 220, centerY + 70);
     grad.addColorStop(0, `rgba(${GOLD_SOFT}, ${alpha})`);
     grad.addColorStop(0.5, `rgba(${GOLD}, ${alpha})`);
     grad.addColorStop(1, `rgba(${GOLD_DARK}, ${alpha})`);
@@ -197,25 +229,24 @@
     ctx.shadowBlur = 26;
     ctx.fillStyle = grad;
 
-    const text = "HALLMARK FINANCIAL BANK";
-    if ("letterSpacing" in ctx) {
-      ctx.letterSpacing = "10px";
-      ctx.fillText(text, width / 2, height / 2);
-    } else {
-      const letterSpacing = 10;
-      let x = width / 2 - ctx.measureText(text).width / 2;
-      for (const char of text) {
-        const charWidth = ctx.measureText(char).width;
-        ctx.fillText(char, x + charWidth / 2, height / 2);
-        x += charWidth + letterSpacing;
-      }
-    }
+    // Line 1: HALLMARK — larger, the primary mark
+    ctx.font = `600 ${titleSize}px 'IBM Plex Sans', sans-serif`;
+    drawLetterSpacedText("HALLMARK", anchorX, centerY - lineGap / 2, 8);
+
+    // Line 2: FINANCIAL BANK — smaller subtitle beneath it
+    ctx.font = `500 ${subSize}px 'IBM Plex Sans', sans-serif`;
+    drawLetterSpacedText("FINANCIAL BANK", anchorX, centerY + lineGap / 2, 5);
+
     ctx.restore();
   }
 
   function render() {
     const now = Date.now();
-    const elapsed = now - startTime;
+    // Looping clock: wraps back to 0 (restarting the rattle) after one full
+    // cycle, rather than settling into "float" forever. Panel jitter below
+    // still uses the raw, non-wrapped `now` so the ripple itself stays
+    // continuous across the loop boundary — only the phase timing loops.
+    const elapsed = (now - startTime) % TOTAL_CYCLE;
 
     let rattleIntensity = 0;
     let panelAlpha = 0.55;

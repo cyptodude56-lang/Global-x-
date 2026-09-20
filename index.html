@@ -22,13 +22,19 @@
 </head>
 <body>
 
+  <!-- Animated background: diagonal chain-link trapezium panels that ripple
+       fast, settle into an "H" mark, transition to the wordmark, then keep
+       rippling slowly behind everything. Fully decorative, no app state
+       lives here, so it can't affect login.js. -->
+  <canvas id="bg-canvas" aria-hidden="true"></canvas>
+
   <div class="fx-ticker" id="fx-ticker">
     <div class="fx-ticker-track" id="fx-ticker-track">
       <span class="fx-ticker-item">Loading exchange rates…</span>
     </div>
   </div>
 
-  <main class="login-page">
+  <main class="login-page auth-hero">
     <div class="login-panel">
       <div class="login-brand">
         <img src="icon-512.png" alt="" />
@@ -86,11 +92,14 @@
 
       <p class="form-error" id="login-error" hidden></p>
       <div id="login-status" class="login-status"></div>
+
+      <div class="security-note">256-bit encrypted connection</div>
     </div>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
+  <script src="auth-bg.js"></script>
   <script src="login.js"></script>
 </body>
 </html>

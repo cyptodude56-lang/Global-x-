@@ -10,17 +10,24 @@
   href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap"
   rel="stylesheet"
 />
+<link rel="stylesheet" href="styles.css" />
 
-<link rel="icon" type="image/svg+xml" href="/Global-x-/assets/favicon-CjkZmihN.svg" />
-<link rel="icon" type="image/png" sizes="32x32" href="/Global-x-/assets/icon-512-nV_-sgtN.png" />
-<link rel="icon" type="image/png" sizes="16x16" href="/Global-x-/assets/icon-512-nV_-sgtN.png" />
+
+<link rel="icon" type="image/svg+xml" href="favicon.svg" />
+<link rel="icon" type="image/png" sizes="32x32" href="icon-512.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="icon-512.png" />
 <link rel="shortcut icon" href="favicon.ico" />
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
-<link rel="manifest" href="/Global-x-/assets/site-DGFW9KNJ.webmanifest" />
+<link rel="manifest" href="site.webmanifest" />
 <meta name="theme-color" content="#10151F" />
-  <link rel="stylesheet" crossorigin href="/Global-x-/assets/index-BMYr9oiQ.css">
 </head>
 <body>
+
+  <!-- Animated background: diagonal chain-link trapezium panels that ripple
+       fast, settle into an "H" mark, transition to the wordmark, then keep
+       rippling slowly behind everything. Fully decorative — no app state
+       lives here, so it can't affect login.js. -->
+  <canvas id="bg-canvas" aria-hidden="true"></canvas>
 
   <div class="fx-ticker" id="fx-ticker">
     <div class="fx-ticker-track" id="fx-ticker-track">
@@ -28,10 +35,10 @@
     </div>
   </div>
 
-  <main class="login-page">
+  <main class="login-page auth-hero">
     <div class="login-panel">
       <div class="login-brand">
-        <img src="/Global-x-/assets/icon-512-nV_-sgtN.png" alt="" />
+        <img src="icon-512.png" alt="" />
         <div class="login-brand-text">
           <p class="login-brand-name">Hallmark</p>
           <p class="login-brand-sub">FINANCIAL BANK</p>
@@ -86,11 +93,14 @@
 
       <p class="form-error" id="login-error" hidden></p>
       <div id="login-status" class="login-status"></div>
+
+      <div class="security-note">256-bit encrypted connection</div>
     </div>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
+  <script src="auth-bg.js"></script>
   <script src="login.js"></script>
 </body>
 </html>
