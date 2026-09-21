@@ -39,8 +39,12 @@
 
 @media (min-width: 881px) {
   .sidebar     { view-transition-name: m-sidebar; }
-  .topbar-dark { view-transition-name: m-topbar; }
   .fx-ticker   { view-transition-name: m-ticker; }
+  /* A named element becomes its own stacking layer, which would trap the
+     notification and profile dropdowns (z-index 20) inside the bar and let
+     the cards below paint over them. Raising the bar itself keeps them on
+     top; 25 sits above page content and below modals (30). */
+  .topbar-dark { view-transition-name: m-topbar; position: relative; z-index: 25; }
 }
 
 html { scroll-behavior: smooth; }
