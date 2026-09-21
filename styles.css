@@ -1914,14 +1914,14 @@ a { color: inherit; }
   z-index: 2;
   overflow: hidden;
   background: linear-gradient(135deg, rgba(16, 21, 31, 0.92) 0%, rgba(27, 35, 56, 0.92) 100%);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(1px);
+  -webkit-backdrop-filter: blur(1px);
   border: 1px solid var(--line-dark);
   border-radius: 10px;
   box-shadow: 0 20px 45px rgba(0, 0, 0, 0.4);
   transition: border-color 0.2s ease;
 }
-.auth-hero .login-panel::after {
+/*.auth-hero .login-panel::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -1933,9 +1933,9 @@ a { color: inherit; }
     transparent 14px
   );
   pointer-events: none;
-}
+}*/
 .auth-hero .login-panel:hover {
-  border-color: rgba(201, 162, 39, 0.4);
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
 .auth-hero .login-brand-name {
@@ -1979,14 +1979,14 @@ a { color: inherit; }
 }
 
 /* Same flat gold/gold-dark CTA convention as .goals-banner-btn and the
-   sidebar promo elsewhere in the app — not a separate button style. */
+   sidebar promo elsewhere in the app, not a separate button style. */
 .auth-hero .submit-btn {
-  background: var(--gold);
-  color: var(--ink);
+  background: var(--white);
+  color: var(--black);
   font-weight: 600;
   letter-spacing: 0.02em;
 }
-.auth-hero .submit-btn:hover { background: var(--gold-dark); }
+.auth-hero .submit-btn:hover { background: var(--gold); }
 
 .auth-hero .auth-toggle-line,
 .auth-hero .helper-text {

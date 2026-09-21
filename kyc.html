@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex" />
+<title>Hallmark Financial Bank — Verify your identity</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap"
+  rel="stylesheet"
+/>
+<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="kyc.css" />
+<link rel="icon" type="image/svg+xml" href="favicon.svg" />
+<meta name="theme-color" content="#10151F" />
+</head>
+<body class="kyc-body">
+
+  <div class="kyc-shell">
+
+    <!-- ================= Progress rail (navy) ================= -->
+    <aside class="kyc-rail">
+      <div class="kyc-rail-inner">
+        <div class="kyc-brand">
+          <img src="icon-512.png" alt="" />
+          <div>
+            <p class="kyc-brand-name">Hallmark</p>
+            <p class="kyc-brand-sub">FINANCIAL BANK</p>
+          </div>
+        </div>
+
+        <div class="kyc-rail-intro">
+          <h1 class="kyc-rail-title">Verify your identity</h1>
+          <p class="kyc-rail-sub">It takes about three minutes. Have a government photo ID and a camera ready.</p>
+        </div>
+
+        <ol class="kyc-tracker" id="kyc-tracker" aria-label="Verification progress">
+          <li class="kyc-track" style="--i:0">
+            <button type="button" class="kyc-track-btn" data-go="0">
+              <span class="kyc-node" aria-hidden="true">
+                <span class="kyc-node-num">1</span>
+                <svg class="kyc-node-check" viewBox="0 0 12 12"><path pathLength="1" d="M2.5 6.2l2.4 2.4 4.6-5" /></svg>
+              </span>
+              <span class="kyc-track-text">
+                <span class="kyc-track-label">Document type</span>
+                <span class="kyc-track-sub" data-sub></span>
+              </span>
+            </button>
+          </li>
+          <li class="kyc-track" style="--i:1">
+            <button type="button" class="kyc-track-btn" data-go="1">
+              <span class="kyc-node" aria-hidden="true">
+                <span class="kyc-node-num">2</span>
+                <svg class="kyc-node-check" viewBox="0 0 12 12"><path pathLength="1" d="M2.5 6.2l2.4 2.4 4.6-5" /></svg>
+              </span>
+              <span class="kyc-track-text">
+                <span class="kyc-track-label">Upload document</span>
+                <span class="kyc-track-sub" data-sub></span>
+              </span>
+            </button>
+          </li>
+          <li class="kyc-track" style="--i:2">
+            <button type="button" class="kyc-track-btn" data-go="2">
+              <span class="kyc-node" aria-hidden="true">
+                <span class="kyc-node-num">3</span>
+                <svg class="kyc-node-check" viewBox="0 0 12 12"><path pathLength="1" d="M2.5 6.2l2.4 2.4 4.6-5" /></svg>
+              </span>
+              <span class="kyc-track-text">
+                <span class="kyc-track-label">Selfie with document</span>
+                <span class="kyc-track-sub" data-sub></span>
+              </span>
+            </button>
+          </li>
+          <li class="kyc-track" style="--i:3">
+            <button type="button" class="kyc-track-btn" data-go="3">
+              <span class="kyc-node" aria-hidden="true">
+                <span class="kyc-node-num">4</span>
+                <svg class="kyc-node-check" viewBox="0 0 12 12"><path pathLength="1" d="M2.5 6.2l2.4 2.4 4.6-5" /></svg>
+              </span>
+              <span class="kyc-track-text">
+                <span class="kyc-track-label">Review and submit</span>
+                <span class="kyc-track-sub" data-sub></span>
+              </span>
+            </button>
+          </li>
+        </ol>
+
+        <!-- Small screens: the tracker collapses into four segments -->
+        <div class="kyc-mobile-progress" id="kyc-mobile-progress" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+        </div>
+
+        <p class="kyc-sandbox">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="10" cy="10" r="7.5" /><path d="M10 9v4.5M10 6.6v.01" /></svg>
+          <span>Sandbox mode. Please use sample images, not a real ID. Files are kept in a private bucket that only you can read.</span>
+        </p>
+      </div>
+    </aside>
+
+    <!-- ================= Step panel (white) ================= -->
+    <main class="kyc-main">
+      <div class="kyc-main-inner">
+
+        <div class="kyc-topbar" id="kyc-topbar">
+          <p class="kyc-step-count" id="kyc-step-count">Step 1 of 4</p>
+          <a class="kyc-skip" href="dashboard.html">Do this later</a>
+        </div>
+
+        <div class="kyc-notice" id="kyc-notice" role="status" hidden>
+          <p class="kyc-notice-title">Your last submission wasn't approved</p>
+          <p class="kyc-notice-text" id="kyc-notice-text"></p>
+        </div>
+
+        <!-- Wizard -->
+        <div class="kyc-flow" id="kyc-flow">
+          <div class="kyc-stage" id="kyc-stage">
+
+            <!-- Step 1: document type -->
+            <section class="kyc-step" data-step="0" aria-labelledby="kyc-h0">
+              <h2 class="kyc-step-title" id="kyc-h0" tabindex="-1">Choose your document</h2>
+              <p class="kyc-step-desc">Pick one valid, unexpired government photo ID. You'll photograph it in the next step.</p>
+
+              <fieldset class="kyc-doc-list" id="kyc-doc-list">
+                <legend class="kyc-sr">Document type</legend>
+
+                <label class="kyc-doc">
+                  <input type="radio" name="kyc-doctype" value="passport" />
+                  <span class="kyc-doc-icon" aria-hidden="true">
+                    <svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="2.5" width="11" height="15" rx="1.5" /><circle cx="10" cy="8.5" r="2.6" /><path d="M7.5 13.5h5" /></svg>
+                  </span>
+                  <span class="kyc-doc-text"><strong>Passport</strong><span>Photo page and signature page</span></span>
+                  <span class="kyc-doc-radio" aria-hidden="true"></span>
+                </label>
+
+                <label class="kyc-doc">
+                  <input type="radio" name="kyc-doctype" value="id_card" />
+                  <span class="kyc-doc-icon" aria-hidden="true">
+                    <svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4.5" width="15" height="11" rx="1.5" /><circle cx="7" cy="9" r="1.6" /><path d="M4.6 13c.4-1.4 1.4-2 2.4-2s2 .6 2.4 2M11.5 8.5H15M11.5 11.5H14.5" /></svg>
+                  </span>
+                  <span class="kyc-doc-text"><strong>National ID card</strong><span>Front and back</span></span>
+                  <span class="kyc-doc-radio" aria-hidden="true"></span>
+                </label>
+
+                <label class="kyc-doc">
+                  <input type="radio" name="kyc-doctype" value="license" />
+                  <span class="kyc-doc-icon" aria-hidden="true">
+                    <svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4.5" width="15" height="11" rx="1.5" /><path d="M5 8h5M5 11h3.5" /><rect x="12" y="7.5" width="3.2" height="4" rx=".6" /></svg>
+                  </span>
+                  <span class="kyc-doc-text"><strong>Driver's license</strong><span>Front and back</span></span>
+                  <span class="kyc-doc-radio" aria-hidden="true"></span>
+                </label>
+              </fieldset>
+
+              <p class="kyc-fine">Accepted files are JPG, PNG or PDF, up to 5 MB each.</p>
+            </section>
+
+            <!-- Step 2: upload document -->
+            <section class="kyc-step" data-step="1" hidden aria-labelledby="kyc-h1">
+              <h2 class="kyc-step-title" id="kyc-h1" tabindex="-1">Upload your document</h2>
+              <p class="kyc-step-desc" id="kyc-upload-desc"></p>
+              <div class="kyc-slots" id="kyc-doc-slots"></div>
+              <p class="kyc-fine">JPG, PNG or PDF, up to 5 MB each.</p>
+            </section>
+
+            <!-- Step 3: selfie -->
+            <section class="kyc-step" data-step="2" hidden aria-labelledby="kyc-h2">
+              <h2 class="kyc-step-title" id="kyc-h2" tabindex="-1">Take a selfie with your document</h2>
+              <p class="kyc-step-desc">Hold the same document next to your face so we can match the two.</p>
+
+              <div class="kyc-selfie-intro">
+                <svg class="kyc-guide" viewBox="0 0 200 160" aria-hidden="true">
+                  <rect class="g-frame" x="6" y="6" width="188" height="148" rx="6" />
+                  <circle class="g-draw" pathLength="1" cx="82" cy="58" r="26" style="--d:.1" />
+                  <path class="g-draw" pathLength="1" d="M28 154c2-30 24-46 54-46s52 16 54 46" style="--d:.3" />
+                  <rect class="g-draw g-card" pathLength="1" x="112" y="86" width="64" height="42" rx="4" style="--d:.55" />
+                  <rect class="g-draw" pathLength="1" x="119" y="93" width="16" height="20" rx="2" style="--d:.8" />
+                  <path class="g-draw" pathLength="1" d="M142 96h27M142 104h22M142 112h25" style="--d:.95" />
+                </svg>
+                <ul class="kyc-tips">
+                  <li>Your face and the whole document are in the frame.</li>
+                  <li>Even lighting, with no glare on the document.</li>
+                  <li>No hats, sunglasses or filters.</li>
+                  <li>Hold it steady so the text is readable.</li>
+                </ul>
+              </div>
+
+              <div class="kyc-slots is-single" id="kyc-selfie-slot"></div>
+              <p class="kyc-fine">JPG or PNG photo, up to 5 MB.</p>
+            </section>
+
+            <!-- Step 4: review -->
+            <section class="kyc-step" data-step="3" hidden aria-labelledby="kyc-h3">
+              <h2 class="kyc-step-title" id="kyc-h3" tabindex="-1">Review and submit</h2>
+              <p class="kyc-step-desc">Check that each image is sharp and shows the whole document.</p>
+
+              <ul class="kyc-summary" id="kyc-summary"></ul>
+
+              <label class="kyc-consent" for="kyc-consent">
+                <input type="checkbox" id="kyc-consent" />
+                <span>I confirm these documents are genuine and belong to me. I agree to Hallmark Financial Bank processing them to verify my identity, in line with its privacy policy.</span>
+              </label>
+              <p class="kyc-form-error" id="kyc-submit-error" role="alert"></p>
+            </section>
+          </div>
+
+          <div class="kyc-actions">
+            <button type="button" class="kyc-btn kyc-btn-ghost" id="kyc-back" hidden>Back</button>
+            <p class="kyc-hint" id="kyc-hint" aria-live="polite"></p>
+            <button type="button" class="kyc-btn kyc-btn-primary" id="kyc-next" disabled>Continue</button>
+          </div>
+        </div>
+
+        <!-- Submitted -->
+        <section class="kyc-done" id="kyc-done" hidden aria-labelledby="kyc-done-title">
+          <svg class="kyc-done-mark" viewBox="0 0 64 64" aria-hidden="true">
+            <circle pathLength="1" cx="32" cy="32" r="28" />
+            <path pathLength="1" d="M20 33l8 8 16-17" />
+          </svg>
+          <h2 class="kyc-step-title" id="kyc-done-title" tabindex="-1">Documents submitted</h2>
+          <p class="kyc-step-desc" id="kyc-done-text"></p>
+
+          <ol class="kyc-status" aria-label="Review status">
+            <li class="is-done" id="kyc-st-received">
+              <span class="kyc-status-dot" aria-hidden="true"></span>
+              <span class="kyc-status-name">Received</span>
+              <span class="kyc-status-when">Just now</span>
+            </li>
+            <li class="is-current" id="kyc-st-review">
+              <span class="kyc-status-dot" aria-hidden="true"></span>
+              <span class="kyc-status-name">In review</span>
+              <span class="kyc-status-when">Usually 24 to 48 hours</span>
+            </li>
+            <li id="kyc-st-decision">
+              <span class="kyc-status-dot" aria-hidden="true"></span>
+              <span class="kyc-status-name">Decision</span>
+              <span class="kyc-status-when">You'll be notified</span>
+            </li>
+          </ol>
+
+          <a class="kyc-btn kyc-btn-primary" href="dashboard.html">Go to dashboard</a>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="kyc.js"></script>
+</body>
+</html>
