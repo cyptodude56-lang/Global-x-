@@ -25,9 +25,9 @@
   // custom properties, so the hex values are duplicated here on purpose).
   const INK = "10, 21, 31";
   const INK_PANEL = "22, 29, 46";
-  const GOLD = "201, 162, 39";
-  const GOLD_DARK = "166, 132, 30";
-  const GOLD_SOFT = "233, 217, 168";
+  const GOLD = "255, 255, 255";
+  const GOLD_DARK = "255, 255, 255";
+  const GOLD_SOFT = "255, 255, 255";
 
   const RATTLE_DURATION = 3200; // fast ripple + chain movement
   const LOGO_DURATION = 2000; // "H" mark phase
