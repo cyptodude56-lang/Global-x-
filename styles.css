@@ -1921,7 +1921,7 @@ a { color: inherit; }
   box-shadow: 0 20px 45px rgba(0, 0, 0, 0.4);
   transition: border-color 0.2s ease;
 }
-/*.auth-hero .login-panel::after {
+.auth-hero .login-panel::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -1933,7 +1933,7 @@ a { color: inherit; }
     transparent 14px
   );
   pointer-events: none;
-}*/
+}
 .auth-hero .login-panel:hover {
   border-color: rgba(201, 162, 39, 0.4);
 }
@@ -1950,49 +1950,47 @@ a { color: inherit; }
 }
 
 .auth-hero .login-title {
-  color: #ffffff;
+  color: #fdf8ea;
   text-shadow: 0 2px 14px rgba(0, 0, 0, 0.4);
 }
 
 .auth-hero .login-sub {
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(230, 222, 200, 0.75);
 }
 
 .auth-hero .field label {
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(233, 217, 168, 0.85);
   letter-spacing: 0.03em;
 }
 
 .auth-hero .field input,
 .auth-hero .field select {
   background: rgba(255, 255, 255, 0.08);
-  border: 1px solid #ffffff;
-  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #f5f0e0;
 }
 .auth-hero .field input::placeholder {
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(220, 210, 180, 0.42);
 }
 .auth-hero .field input:focus,
 .auth-hero .field select:focus {
-  border-color: #ffffff;
-  background: rgba(255, 255, 255, 0.16);
+  border-color: var(--gold);
+  background: rgba(255, 255, 255, 0.12);
 }
 
-/* White pill buttons — covers "Send code", "Create account & send code",
-   and "Verify & log in" since all three share .submit-btn. Text stays
-   ink-dark so the label is actually readable against the white fill. */
+/* Same flat gold/gold-dark CTA convention as .goals-banner-btn and the
+   sidebar promo elsewhere in the app — not a separate button style. */
 .auth-hero .submit-btn {
-  background: #ffffff;
+  background: var(--gold);
   color: var(--ink);
-  border: 1px solid #ffffff;
   font-weight: 600;
   letter-spacing: 0.02em;
 }
-.auth-hero .submit-btn:hover { background: #f0f0f0; border-color: #f0f0f0; }
+.auth-hero .submit-btn:hover { background: var(--gold-dark); }
 
 .auth-hero .auth-toggle-line,
 .auth-hero .helper-text {
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(214, 205, 180, 0.7);
 }
 
 .auth-hero .form-error {
@@ -2005,4 +2003,10 @@ a { color: inherit; }
   text-align: center;
   letter-spacing: 0.05em;
   color: rgba(200, 190, 165, 0.45);
+}
+
+@media (max-width: 480px) {
+  .auth-hero .login-panel {
+    border-radius: 22px;
+  }
 }

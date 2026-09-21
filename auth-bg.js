@@ -35,7 +35,7 @@
   const FLOAT_HOLD_DURATION = 4500; // slow float, wordmark held, before looping
   const TOTAL_CYCLE = RATTLE_DURATION + LOGO_DURATION + TEXT_DURATION + FLOAT_HOLD_DURATION;
 
-  const PANEL_COUNT = 11;
+  const PANEL_COUNT = 15;
   let panels = [];
 
   function resizeCanvas() {
@@ -51,7 +51,7 @@
     const midX = width / 2;
     const midY = height / 2;
     const baseW = Math.min(width * 0.85, 1400);
-    const panelHeight = height * 0.22;
+    const panelHeight = height * 0.12;
     const gap = height * 0.012;
     const totalHeight = PANEL_COUNT * (panelHeight + gap) - gap;
     const startY = midY - totalHeight / 2;
