@@ -10,10 +10,7 @@
 // is harmless, so reloading this page can't create a second set.
 // ---------------------------------------------------------------------------
 
-const sb =
-  window.HALLMARK_SUPABASE_URL && !window.HALLMARK_SUPABASE_URL.includes("YOUR-PROJECT")
-    ? window.supabase.createClient(window.HALLMARK_SUPABASE_URL, window.HALLMARK_SUPABASE_ANON_KEY)
-    : null;
+const sb = window.HALLMARK_SB;
 
 const el = (id) => document.getElementById(id);
 let userRow = null;

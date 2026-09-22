@@ -27,40 +27,17 @@
 let CURRENT_USER_ID = null;
 const AVATAR_COLORS = ["#1F6F5C", "#2451B0", "#C98A3B", "#8B3A62", "#3A6B8A", "#6B7A2E", "#7A3A3A"];
 
-const sb =
-  window.HALLMARK_SUPABASE_URL && !window.HALLMARK_SUPABASE_URL.includes("YOUR-PROJECT")
-    ? window.supabase.createClient(window.HALLMARK_SUPABASE_URL, window.HALLMARK_SUPABASE_ANON_KEY)
-    : null;
+const sb = window.HALLMARK_SB;
 
 const el = (id) => document.getElementById(id);
 
 async function resolveSession() {
-  if (!sb) {
-    document.querySelector(".dashboard-content").innerHTML =
-      '<div class="error-box" style="color:var(--ink)">Supabase isn\'t configured yet.</div>';
-    return false;
-  }
-  const {
-    data: { session },
-  } = await sb.auth.getSession();
-  if (!session) {
-    window.location.href = "../index.html";
-    return false;
-  }
-  const { data: userRow, error } = await sb.from("users").select("id").eq("auth_user_id", session.user.id).single();
-  if (error || !userRow) {
-    await sb.auth.signOut();
-    window.location.href = "../index.html";
-    return false;
-  }
-  CURRENT_USER_ID = userRow.id;
-
-  const { data: existingWallets } = await sb.from("wallets").select("id").eq("user_id", CURRENT_USER_ID).limit(1);
-  if (!existingWallets || existingWallets.length === 0) {
-    window.location.href = "../onboarding/complete-profile.html";
-    return false;
-  }
-  return true;
+  CURRENT_USER_ID = await window.hallmarkResolveAccount({
+    loginPath: "../index.html",
+    incompleteProfilePath: "../onboarding/complete-profile.html",
+    errorTarget: ".dashboard-content",
+  });
+  return CURRENT_USER_ID !== null;
 }
 
 // ---- Icons (same set as elsewhere) ----
@@ -372,6 +349,7 @@ async function init() {
     if (btn.dataset.nav === "accounts") { btn.addEventListener("click", () => (window.location.href = "../accounts/accounts.html")); return; }
     if (btn.dataset.nav === "transfers") { btn.addEventListener("click", () => (window.location.href = "../transfers/transfers.html")); return; }
     if (btn.dataset.nav === "payments") { btn.addEventListener("click", () => (window.location.href = "../payments/payments.html")); return; }
+    if (btn.dataset.nav === "loans") { btn.addEventListener("click", () => (window.location.href = "../loans/loans.html")); return; }
     if (btn.dataset.nav === "cards") { btn.addEventListener("click", () => (window.location.href = "../cards/cards.html")); return; }
     if (btn.dataset.nav === "statements") { btn.addEventListener("click", () => (window.location.href = "../statements/statements.html")); return; }
     btn.addEventListener("click", () => { showToast(`${btn.textContent.trim()} coming soon in a later phase`); closeSidebar(); });

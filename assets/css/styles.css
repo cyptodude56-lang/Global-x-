@@ -2010,3 +2010,235 @@ a { color: inherit; }
     border-radius: 22px;
   }
 }
+/* ------------------------------------------------------------------------ */
+/* Loans page                                                                */
+/*                                                                            */
+/* Reuses .pay-tabs / .pay-tab / .pay-panel (payments.html) for the four     */
+/* tabs, and .field / .form-row / .submit-btn for the Apply form — only the  */
+/* pieces below (summary cards, limit meter, application timeline, and the   */
+/* limit factor table) are new, since nothing like them exists elsewhere.    */
+/* ------------------------------------------------------------------------ */
+
+.loan-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 22px;
+}
+@media (max-width: 900px) {
+  .loan-summary-grid { grid-template-columns: 1fr; }
+}
+.loan-summary-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 18px 20px;
+}
+.loan-summary-label {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin: 0 0 8px;
+}
+.loan-summary-value {
+  font-family: var(--font-mono);
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--ink);
+}
+.loan-summary-sub {
+  font-size: 0.74rem;
+  color: var(--muted);
+  margin: 4px 0 0;
+}
+
+/* Live limit meter shown while filling out the Apply form */
+.loan-meter {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin: 4px 0 18px;
+}
+.loan-meter-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+.loan-meter-label { font-size: 0.82rem; color: var(--muted); }
+.loan-meter-value { font-family: var(--font-mono); font-weight: 600; font-size: 0.95rem; color: var(--ink); }
+.loan-meter-track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+}
+.loan-meter-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--gold);
+  transition: width 0.25s ease, background 0.25s ease;
+}
+.loan-meter-fill.over-limit { background: var(--negative); }
+.loan-meter-note {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin: 8px 0 0;
+}
+.loan-meter-note.warn { color: var(--negative); }
+
+/* Application tracker (Status tab) */
+.loan-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 6px 0 4px;
+}
+.loan-timeline-step {
+  display: flex;
+  gap: 14px;
+  position: relative;
+  padding-bottom: 22px;
+}
+.loan-timeline-step:last-child { padding-bottom: 0; }
+.loan-timeline-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--line);
+  color: var(--muted);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.68rem;
+  font-weight: 700;
+  z-index: 1;
+}
+.loan-timeline-step:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: 10px;
+  top: 22px;
+  bottom: 0;
+  width: 2px;
+  background: var(--line);
+}
+.loan-timeline-step.done .loan-timeline-dot {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #fff;
+}
+.loan-timeline-step.done:not(:last-child)::before { background: var(--gold); }
+.loan-timeline-step.current .loan-timeline-dot {
+  background: var(--surface);
+  border-color: var(--gold);
+  color: var(--gold-dark);
+}
+.loan-timeline-step.rejected .loan-timeline-dot {
+  background: var(--negative);
+  border-color: var(--negative);
+  color: #fff;
+}
+.loan-timeline-body { padding-top: 1px; }
+.loan-timeline-title { font-weight: 600; font-size: 0.88rem; margin: 0; color: var(--ink); }
+.loan-timeline-step:not(.done):not(.current) .loan-timeline-title { color: var(--muted); }
+.loan-timeline-when { font-size: 0.74rem; color: var(--muted); margin: 2px 0 0; }
+
+/* Loan Limit factor breakdown (Limit tab) */
+.loan-factor-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.loan-factor-table th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0 0 10px;
+  border-bottom: 1px solid var(--line);
+}
+.loan-factor-table td {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+.loan-factor-table tr:last-child td { border-bottom: none; }
+.loan-factor-name { font-weight: 600; color: var(--ink); }
+.loan-factor-weight { color: var(--muted); font-family: var(--font-mono); font-size: 0.78rem; }
+.loan-factor-bar-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+  min-width: 90px;
+}
+.loan-factor-bar-fill { height: 100%; border-radius: 999px; background: var(--gold); }
+.loan-factor-score { font-family: var(--font-mono); font-weight: 600; text-align: right; white-space: nowrap; }
+
+.loan-tips-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.loan-tips-list li {
+  display: flex;
+  gap: 10px;
+  font-size: 0.85rem;
+  color: var(--ink);
+  line-height: 1.5;
+}
+.loan-tips-list li::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+  flex-shrink: 0;
+  margin-top: 7px;
+}
+
+.loan-disclaimer {
+  font-size: 0.74rem;
+  color: var(--muted);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin: 0 0 18px;
+  line-height: 1.5;
+}
+
+.loan-usage-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.loan-usage-row:last-child { border-bottom: none; }
+.loan-usage-top { display: flex; justify-content: space-between; align-items: baseline; }
+.loan-usage-name { font-weight: 600; font-size: 0.9rem; color: var(--ink); }
+.loan-usage-amounts { font-family: var(--font-mono); font-size: 0.82rem; color: var(--muted); }
+.loan-usage-track { height: 7px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.loan-usage-fill { height: 100%; border-radius: 999px; background: var(--positive); }
+
+.loan-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 40px 24px;
+  gap: 6px;
+  color: var(--muted);
+}
+.loan-empty-title { font-weight: 600; font-size: 0.92rem; margin: 0; color: var(--ink); }
+.loan-empty-sub { font-size: 0.82rem; margin: 0; max-width: 320px; }

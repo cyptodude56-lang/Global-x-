@@ -15,6 +15,7 @@ export default defineConfig({
         payments: resolve(__dirname, 'payments/payments.html'),
         cards: resolve(__dirname, 'cards/cards.html'),
         statements: resolve(__dirname, 'statements/statements.html'),
+        loans: resolve(__dirname, 'loans/loans.html'),
         settings: resolve(__dirname, 'settings/settings.html'),
         completeProfile: resolve(__dirname, 'onboarding/complete-profile.html'),
         confirmEmail: resolve(__dirname, 'onboarding/confirm-email.html'),

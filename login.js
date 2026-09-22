@@ -17,10 +17,7 @@
 
 const CODE_EXPIRY_SECONDS = 300; // keep in sync with Supabase's Email OTP Expiration setting
 
-const sb =
-  window.HALLMARK_SUPABASE_URL && !window.HALLMARK_SUPABASE_URL.includes("YOUR-PROJECT")
-    ? window.supabase.createClient(window.HALLMARK_SUPABASE_URL, window.HALLMARK_SUPABASE_ANON_KEY)
-    : null;
+const sb = window.HALLMARK_SB;
 
 const el = (id) => document.getElementById(id);
 let pendingEmail = null;
@@ -190,7 +187,7 @@ el("signup-form").addEventListener("submit", async (e) => {
     email: el("signup-email").value.trim(),
     options: {
       shouldCreateUser: true,
-      emailRedirectTo: new URL("confirm-email.html", window.location.href).toString(),
+      emailRedirectTo: new URL("onboarding/confirm-email.html", window.location.href).toString(),
       data: {
         first_name: el("signup-first-name").value.trim(),
         last_name: el("signup-last-name").value.trim(),

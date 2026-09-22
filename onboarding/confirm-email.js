@@ -8,10 +8,7 @@
 // move on to profile completion after a short pause.
 // ---------------------------------------------------------------------------
 
-const sb =
-  window.HALLMARK_SUPABASE_URL && !window.HALLMARK_SUPABASE_URL.includes("YOUR-PROJECT")
-    ? window.supabase.createClient(window.HALLMARK_SUPABASE_URL, window.HALLMARK_SUPABASE_ANON_KEY)
-    : null;
+const sb = window.HALLMARK_SB;
 
 const el = (id) => document.getElementById(id);
 

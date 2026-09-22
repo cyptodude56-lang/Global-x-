@@ -76,14 +76,7 @@ const SILHOUETTES = {
   selfie: SIL_OPEN + '<rect x="2" y="4" width="92" height="56" rx="4"/><circle cx="36" cy="26" r="9"/><path d="M18 58c1-11 8-17 18-17s17 6 18 17"/><rect x="58" y="32" width="26" height="17" rx="2"/></svg>',
 };
 
-let sb = null;
-try {
-  if (window.HALLMARK_SUPABASE_URL && !window.HALLMARK_SUPABASE_URL.includes("YOUR-PROJECT")) {
-    sb = window.supabase.createClient(window.HALLMARK_SUPABASE_URL, window.HALLMARK_SUPABASE_ANON_KEY);
-  }
-} catch (err) {
-  console.warn("Supabase client unavailable:", err);
-}
+const sb = window.HALLMARK_SB;
 
 const el = (id) => document.getElementById(id);
 
@@ -182,17 +175,8 @@ function validateFile(file, photoOnly) {
 // ---------------------------------------------------------------------------
 
 async function gate() {
-  if (!sb) {
-    window.location.replace("index.html");
-    return false;
-  }
-  const {
-    data: { session },
-  } = await sb.auth.getSession();
-  if (!session) {
-    window.location.replace("index.html");
-    return false;
-  }
+  const session = await window.hallmarkRequireSession("../index.html");
+  if (!session) return false;
   state.userId = session.user.id;
   const meta = (session.user && session.user.user_metadata) || {};
   state.firstName = typeof meta.first_name === "string" ? meta.first_name.trim().slice(0, 40) : "";
@@ -752,7 +736,7 @@ async function init() {
     ok = await gate();
   } catch (err) {
     console.error("Session check failed:", err);
-    window.location.replace("index.html");
+    window.location.href = "../index.html";
   }
   if (!ok) return;
   buildSelfieSlot();

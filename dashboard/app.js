@@ -21,10 +21,7 @@ const AVATAR_COLORS = ["#1F6F5C", "#2451B0", "#C98A3B", "#8B3A62", "#3A6B8A", "#
 
 const PAN_FIELD_CANDIDATES = ["full_pan", "card_number", "pan", "unmasked_pan", "card_number_full", "number"];
 
-const sb =
-  window.HALLMARK_SUPABASE_URL && !window.HALLMARK_SUPABASE_URL.includes("YOUR-PROJECT")
-    ? window.supabase.createClient(window.HALLMARK_SUPABASE_URL, window.HALLMARK_SUPABASE_ANON_KEY)
-    : null;
+const sb = window.HALLMARK_SB;
 
 let ACCOUNT = null;
 let txCounter = 0;
@@ -35,47 +32,12 @@ const el = (id) => document.getElementById(id);
 // Resolves the real Supabase session into a public.users id. Returns false
 // (and redirects) if there's no session, or no customer row linked to it.
 async function resolveSession() {
-  if (!sb) {
-    document.querySelector(".dashboard-content").innerHTML =
-      '<div class="error-box" style="color:var(--ink)">Supabase isn\'t configured yet. Open <code>supabase-config.js</code> and fill in your project URL and anon key.</div>';
-    return false;
-  }
-
-  const {
-    data: { session },
-  } = await sb.auth.getSession();
-  if (!session) {
-    window.location.href = "../index.html";
-    return false;
-  }
-
-  const { data: userRow, error } = await sb
-    .from("users")
-    .select("id")
-    .eq("auth_user_id", session.user.id)
-    .single();
-
-  if (error || !userRow) {
-    // Logged in with Supabase Auth, but not linked to a demo customer —
-    // e.g. link_auth_users.sql hasn't been run yet for this account.
-    await sb.auth.signOut();
-    window.location.href = "../index.html";
-    return false;
-  }
-
-  CURRENT_USER_ID = userRow.id;
-
-  const { data: existingWallets } = await sb.from("wallets").select("id").eq("user_id", CURRENT_USER_ID).limit(1);
-  if (!existingWallets || existingWallets.length === 0) {
-    // Signed in, but never finished complete-profile.html (e.g. navigated
-    // here directly, or the auto-advance from confirm-email.html got
-    // interrupted) — send them back to finish setup instead of showing an
-    // empty, broken dashboard.
-    window.location.href = "../onboarding/complete-profile.html";
-    return false;
-  }
-
-  return true;
+  CURRENT_USER_ID = await window.hallmarkResolveAccount({
+    loginPath: "../index.html",
+    incompleteProfilePath: "../onboarding/complete-profile.html",
+    errorTarget: ".dashboard-content",
+  });
+  return CURRENT_USER_ID !== null;
 }
 
 // ---------------------------------------------------------------------------
@@ -1202,6 +1164,10 @@ async function init() {
     }
     if (btn.dataset.nav === "cards") {
       btn.addEventListener("click", () => (window.location.href = "../cards/cards.html"));
+      return;
+    }
+    if (btn.dataset.nav === "loans") {
+      btn.addEventListener("click", () => (window.location.href = "../loans/loans.html"));
       return;
     }
     if (btn.dataset.nav === "statements") { 
