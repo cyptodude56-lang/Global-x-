@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hallmark Financial Bank — Statements</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap"
+  rel="stylesheet"
+/>
+<script src="../assets/js/motion.js"></script>
+
+<link rel="icon" type="image/svg+xml" href="/Global-x-/assets/favicon-CjkZmihN.svg" />
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="../favicon-16.png" />
+<link rel="shortcut icon" href="../favicon.ico" />
+<link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png" />
+<link rel="manifest" href="/Global-x-/assets/site-DGFW9KNJ.webmanifest" />
+<meta name="theme-color" content="#10151F" />
+  <link rel="stylesheet" crossorigin href="/Global-x-/assets/styles-CbsWGwjK.css">
+  <link rel="stylesheet" crossorigin href="/Global-x-/assets/motion-DoHGPwGT.css">
+</head>
+<body>
+
+  <div class="fx-ticker" id="fx-ticker">
+    <div class="fx-ticker-track" id="fx-ticker-track">
+      <span class="fx-ticker-item">Loading exchange rates…</span>
+    </div>
+  </div>
+
+  <div class="app-shell">
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+    <aside class="sidebar" id="sidebar">
+      <button class="sidebar-close-btn" id="btn-sidebar-close" type="button" aria-label="Close menu">
+        <span data-icon="close"></span>
+      </button>
+      <div class="sidebar-logo">
+        <img src="/Global-x-/assets/icon-512-nV_-sgtN.png" alt="" />
+        <div class="sidebar-logo-text">
+          <p class="sidebar-logo-name">Hallmark</p>
+          <p class="sidebar-logo-sub">FINANCIAL BANK</p>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav" id="sidebar-nav">
+        <button class="nav-item" data-nav="dashboard" type="button"><span class="nav-icon" data-icon="dashboard"></span><span>Dashboard</span></button>
+        <button class="nav-item" data-nav="accounts" type="button"><span class="nav-icon" data-icon="accounts"></span><span>Accounts</span></button>
+        <button class="nav-item" data-nav="transfers" type="button"><span class="nav-icon" data-icon="transfers"></span><span>Transfers</span></button>
+        <button class="nav-item" data-nav="payments" type="button"><span class="nav-icon" data-icon="payments"></span><span>Payments</span></button>
+        <button class="nav-item" data-nav="cards" type="button"><span class="nav-icon" data-icon="cards"></span><span>Cards</span></button>
+        <button class="nav-item" data-nav="loans" type="button"><span class="nav-icon" data-icon="loans"></span><span>Loans</span></button>
+        <button class="nav-item" data-nav="investments" type="button"><span class="nav-icon" data-icon="investments"></span><span>Investments</span></button>
+        <button class="nav-item" data-nav="wealth" type="button"><span class="nav-icon" data-icon="wealth"></span><span>Wealth Management</span></button>
+        <button class="nav-item active" data-nav="statements" type="button"><span class="nav-icon" data-icon="statements"></span><span>Statements</span></button>
+        <button class="nav-item" data-nav="settings" type="button"><span class="nav-icon" data-icon="settings"></span><span>Settings</span></button>
+      </nav>
+
+      <div class="sidebar-promo">
+        <p class="sidebar-promo-title">Build your financial future with Hallmark</p>
+        <p class="sidebar-promo-text">Personalized banking. Smarter wealth. Greater possibilities.</p>
+        <button class="sidebar-promo-btn" id="btn-explore" type="button">Explore Opportunities</button>
+      </div>
+    </aside>
+
+    <div class="main-shell">
+      <header class="topbar-dark">
+        <button class="hamburger-btn" id="btn-hamburger" type="button" aria-label="Open menu">
+          <span data-icon="hamburger"></span>
+        </button>
+        <div class="search-box">
+          <span class="nav-icon" data-icon="search"></span>
+          <input type="text" placeholder="Search transactions, payees, or services…" />
+        </div>
+
+        <div class="topbar-actions">
+          <div class="bell-wrap">
+            <button class="bell-btn" id="btn-bell" type="button" aria-label="Notifications">
+              <span class="nav-icon" data-icon="bell"></span>
+              <span class="bell-badge" id="bell-badge" hidden></span>
+            </button>
+            <div class="notif-dropdown" id="notif-dropdown" hidden>
+              <p class="notif-dropdown-title">Notifications</p>
+              <div class="notif-list" id="notif-list"></div>
+            </div>
+          </div>
+
+          <div class="user-menu-wrap">
+            <button class="user-menu" id="user-menu-btn" type="button" aria-haspopup="true" aria-expanded="false">
+              <span id="user-avatar" class="avatar"></span>
+              <div class="user-name-block">
+                <p id="user-name" class="user-name"></p>
+                <p id="user-tier" class="user-tier"></p>
+              </div>
+              <span class="user-menu-chevron" data-icon="chevron"></span>
+            </button>
+            <div class="user-dropdown" id="user-dropdown" hidden>
+              <a class="user-dropdown-item" href="../settings/settings.html">
+                <span data-icon="accounts"></span> Profile
+              </a>
+              <a class="user-dropdown-item" href="../settings/settings.html">
+                <span data-icon="settings"></span> Settings
+              </a>
+              <div class="user-dropdown-divider"></div>
+              <button class="user-dropdown-item danger" type="button" id="btn-logout">
+                <span data-icon="logout"></span> Log out
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="dashboard-content">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Statements</h1>
+            <p class="page-subtitle">Review and download your transaction history by account and period.</p>
+          </div>
+        </div>
+
+        <section class="statement-card" id="statement-card">
+          <div class="statement-card__header">
+            <div class="statement-card__title-row">
+              <span class="statement-card__title">Statement</span>
+              <span class="statement-card__badge" id="stmt-period-badge">—</span>
+            </div>
+            <div class="statement-card__actions">
+              <button type="button" id="btn-stmt-download" class="stmt-action-btn">
+                <span data-icon="download"></span> Download CSV
+              </button>
+              <button type="button" id="btn-stmt-print" class="stmt-action-btn">
+                <span data-icon="print"></span> Print
+              </button>
+            </div>
+          </div>
+
+          <div class="statement-controls">
+            <div class="stmt-tabs" id="stmt-tabs">
+              <button class="stmt-tab active" data-type="all" type="button">All</button>
+              <button class="stmt-tab" data-type="income" type="button">Income</button>
+              <button class="stmt-tab" data-type="expenses" type="button">Expenses</button>
+              <button class="stmt-tab" data-type="transfers" type="button">Transfers</button>
+            </div>
+            <div class="stmt-selects">
+              <select id="stmt-account-select" aria-label="Account"></select>
+              <select id="stmt-month-select" aria-label="Period"></select>
+            </div>
+          </div>
+
+          <div class="stmt-table-wrap">
+            <table class="stmt-table" id="stmt-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Description</th>
+                  <th>Category</th>
+                  <th>Account</th>
+                  <th style="text-align:right;">Amount</th>
+                </tr>
+              </thead>
+              <tbody id="stmt-table-body"></tbody>
+            </table>
+          </div>
+
+          <div class="stmt-footer">
+            <div class="stmt-footer-stat">
+              <span class="stmt-footer-label">Money in</span>
+              <span class="stmt-footer-value in" id="stmt-total-in"></span>
+            </div>
+            <div class="stmt-footer-stat">
+              <span class="stmt-footer-label">Money out</span>
+              <span class="stmt-footer-value out" id="stmt-total-out"></span>
+            </div>
+            <div class="stmt-footer-stat">
+              <span class="stmt-footer-label">Net for period</span>
+              <span class="stmt-footer-value" id="stmt-net"></span>
+            </div>
+            <div class="stmt-footer-stat">
+              <span class="stmt-footer-label">Current balance (today)</span>
+              <span class="stmt-footer-value" id="stmt-current-balance"></span>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="app-footer">
+        <span>HALLMARK FINANCIAL BANK &nbsp;&nbsp;Secure | Reliable | Global</span>
+        <span>Need help? Contact our 24/7 support</span>
+      </footer>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../assets/js/supabase-config.js"></script>
+  <script src="statements.js"></script>
+</body>
+</html>
