@@ -35,7 +35,7 @@ async function init() {
     data: { session },
   } = await sb.auth.getSession();
   if (!session) {
-    window.location.href = "index.html";
+    window.location.href = "../index.html";
     return;
   }
 

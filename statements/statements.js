@@ -36,20 +36,20 @@ async function resolveSession() {
     data: { session },
   } = await sb.auth.getSession();
   if (!session) {
-    window.location.href = "index.html";
+    window.location.href = "../index.html";
     return false;
   }
   const { data: userRow, error } = await sb.from("users").select("id").eq("auth_user_id", session.user.id).single();
   if (error || !userRow) {
     await sb.auth.signOut();
-    window.location.href = "index.html";
+    window.location.href = "../index.html";
     return false;
   }
   CURRENT_USER_ID = userRow.id;
 
   const { data: existingWallets } = await sb.from("wallets").select("id").eq("user_id", CURRENT_USER_ID).limit(1);
   if (!existingWallets || existingWallets.length === 0) {
-    window.location.href = "complete-profile.html";
+    window.location.href = "../onboarding/complete-profile.html";
     return false;
   }
   return true;
@@ -378,7 +378,7 @@ async function init() {
   mountIcons();
   loadFxTicker();
 
-  el("btn-logout").addEventListener("click", async () => { await sb.auth.signOut(); window.location.href = "index.html"; });
+  el("btn-logout").addEventListener("click", async () => { await sb.auth.signOut(); window.location.href = "../index.html"; });
   el("btn-bell").addEventListener("click", (e) => {
     e.stopPropagation();
     const dd = el("notif-dropdown");
@@ -413,12 +413,12 @@ async function init() {
 
   document.querySelectorAll(".nav-item[data-nav]").forEach((btn) => {
     if (btn.dataset.nav === "statements") return; // already here
-    if (btn.dataset.nav === "dashboard") { btn.addEventListener("click", () => (window.location.href = "dashboard.html")); return; }
-    if (btn.dataset.nav === "accounts") { btn.addEventListener("click", () => (window.location.href = "accounts.html")); return; }
-    if (btn.dataset.nav === "transfers") { btn.addEventListener("click", () => (window.location.href = "transfers.html")); return; }
-    if (btn.dataset.nav === "payments") { btn.addEventListener("click", () => (window.location.href = "payments.html")); return; }
-    if (btn.dataset.nav === "cards") { btn.addEventListener("click", () => (window.location.href = "cards.html")); return; }
-    if (btn.dataset.nav === "settings") { btn.addEventListener("click", () => (window.location.href = "settings.html")); return; }
+    if (btn.dataset.nav === "dashboard") { btn.addEventListener("click", () => (window.location.href = "../dashboard/dashboard.html")); return; }
+    if (btn.dataset.nav === "accounts") { btn.addEventListener("click", () => (window.location.href = "../accounts/accounts.html")); return; }
+    if (btn.dataset.nav === "transfers") { btn.addEventListener("click", () => (window.location.href = "../transfers/transfers.html")); return; }
+    if (btn.dataset.nav === "payments") { btn.addEventListener("click", () => (window.location.href = "../payments/payments.html")); return; }
+    if (btn.dataset.nav === "cards") { btn.addEventListener("click", () => (window.location.href = "../cards/cards.html")); return; }
+    if (btn.dataset.nav === "settings") { btn.addEventListener("click", () => (window.location.href = "../settings/settings.html")); return; }
     btn.addEventListener("click", () => { showToast(`${btn.textContent.trim()} coming soon in a later phase`); closeSidebar(); });
   });
   el("btn-explore").addEventListener("click", () => showToast("Explore Opportunities coming soon in a later phase"));

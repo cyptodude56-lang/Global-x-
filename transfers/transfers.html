@@ -3,23 +3,23 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Hallmark Financial Bank — Cards</title>
+<title>Hallmark Financial Bank — Transfers</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link
   href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap"
   rel="stylesheet"
 />
-<link rel="stylesheet" href="styles.css" />
-<link rel="stylesheet" href="motion.css" />
-<script src="motion.js"></script>
+<link rel="stylesheet" href="../assets/css/styles.css" />
+<link rel="stylesheet" href="../assets/css/motion.css" />
+<script src="../assets/js/motion.js"></script>
 
-<link rel="icon" type="image/svg+xml" href="favicon.svg" />
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
-<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png" />
-<link rel="shortcut icon" href="favicon.ico" />
-<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
-<link rel="manifest" href="site.webmanifest" />
+<link rel="icon" type="image/svg+xml" href="../favicon.svg" />
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="../favicon-16.png" />
+<link rel="shortcut icon" href="../favicon.ico" />
+<link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png" />
+<link rel="manifest" href="../site.webmanifest" />
 <meta name="theme-color" content="#10151F" />
 </head>
 <body>
@@ -37,7 +37,7 @@
         <span data-icon="close"></span>
       </button>
       <div class="sidebar-logo">
-        <img src="icon-512.png" alt="" />
+        <img src="../icon-512.png" alt="" />
         <div class="sidebar-logo-text">
           <p class="sidebar-logo-name">Hallmark</p>
           <p class="sidebar-logo-sub">FINANCIAL BANK</p>
@@ -47,9 +47,9 @@
       <nav class="sidebar-nav" id="sidebar-nav">
         <button class="nav-item" data-nav="dashboard" type="button"><span class="nav-icon" data-icon="dashboard"></span><span>Dashboard</span></button>
         <button class="nav-item" data-nav="accounts" type="button"><span class="nav-icon" data-icon="accounts"></span><span>Accounts</span></button>
-        <button class="nav-item" data-nav="transfers" type="button"><span class="nav-icon" data-icon="transfers"></span><span>Transfers</span></button>
+        <button class="nav-item active" data-nav="transfers" type="button"><span class="nav-icon" data-icon="transfers"></span><span>Transfers</span></button>
         <button class="nav-item" data-nav="payments" type="button"><span class="nav-icon" data-icon="payments"></span><span>Payments</span></button>
-        <button class="nav-item active" data-nav="cards" type="button"><span class="nav-icon" data-icon="cards"></span><span>Cards</span></button>
+        <button class="nav-item" data-nav="cards" type="button"><span class="nav-icon" data-icon="cards"></span><span>Cards</span></button>
         <button class="nav-item" data-nav="loans" type="button"><span class="nav-icon" data-icon="loans"></span><span>Loans</span></button>
         <button class="nav-item" data-nav="investments" type="button"><span class="nav-icon" data-icon="investments"></span><span>Investments</span></button>
         <button class="nav-item" data-nav="wealth" type="button"><span class="nav-icon" data-icon="wealth"></span><span>Wealth Management</span></button>
@@ -96,10 +96,10 @@
               <span class="user-menu-chevron" data-icon="chevron"></span>
             </button>
             <div class="user-dropdown" id="user-dropdown" hidden>
-              <a class="user-dropdown-item" href="settings.html">
+              <a class="user-dropdown-item" href="../settings/settings.html">
                 <span data-icon="accounts"></span> Profile
               </a>
-              <a class="user-dropdown-item" href="settings.html">
+              <a class="user-dropdown-item" href="../settings/settings.html">
                 <span data-icon="settings"></span> Settings
               </a>
               <div class="user-dropdown-divider"></div>
@@ -114,45 +114,55 @@
       <main class="dashboard-content">
         <div class="page-header">
           <div>
-            <h1 class="page-title">My Cards</h1>
-            <p class="page-subtitle">Manage your physical and virtual cards.</p>
-          </div>
-          <div class="header-actions">
-            <button class="ghost-btn" id="btn-toggle-all-details" type="button" style="flex:none;">Show all details</button>
-            <button class="submit-btn" id="btn-request-card" type="button" style="width:auto;">Request new card</button>
+            <h1 class="page-title">Transfers</h1>
+            <p class="page-subtitle">Move money between your own accounts, or send to a saved payee.</p>
           </div>
         </div>
 
-        <div id="request-panel" class="request-panel" hidden>
-          <p class="side-panel-title">Request a new card</p>
-          <p class="helper-text">Virtual cards are ready instantly. Physical cards arrive in 5–7 business days.</p>
-          <div class="card-type-options">
-            <button class="type-option selected" data-type="virtual" type="button">
-              <span class="type-radio"></span>
-              <span class="type-info"><span class="type-name">Virtual card</span><span class="type-desc">Instant access — ideal for online payments and subscriptions.</span></span>
-            </button>
-            <button class="type-option" data-type="physical" type="button">
-              <span class="type-radio"></span>
-              <span class="type-info"><span class="type-name">Physical card</span><span class="type-desc">Delivered to your address — for ATM withdrawals and in-store payments.</span></span>
-            </button>
-          </div>
-          <div class="request-actions">
-            <button class="ghost-btn" id="btn-cancel-request" type="button">Cancel</button>
-            <button class="submit-btn" id="btn-confirm-request" type="button" style="width:auto;">Request card</button>
-          </div>
-        </div>
+        <div class="transfers-grid">
+          <section class="side-panel transfer-form-panel">
+            <p class="side-panel-title">New transfer</p>
 
-        <div class="section-header">
-          <p class="section-title">Physical cards</p>
-          <span class="filter-badge" id="physical-count"></span>
-        </div>
-        <div class="cards-grid" id="physical-cards-grid"></div>
+            <div class="transfer-type-toggle">
+              <button class="transfer-type-btn active" id="type-internal" type="button">Between my accounts</button>
+              <button class="transfer-type-btn" id="type-payee" type="button">To a saved payee</button>
+            </div>
 
-        <div class="section-header" style="margin-top:28px;">
-          <p class="section-title">Virtual cards</p>
-          <span class="filter-badge" id="virtual-count"></span>
+            <form id="transfer-form">
+              <div class="field"><label for="tf-from">From account</label>
+                <select id="tf-from"></select>
+              </div>
+
+              <div class="field" id="tf-to-field"><label for="tf-to">To account</label>
+                <input id="tf-to" type="text" disabled />
+              </div>
+
+              <div class="field" id="tf-payee-field" hidden><label for="tf-payee">Payee</label>
+                <select id="tf-payee"></select>
+              </div>
+
+              <div class="field"><label for="tf-amount">Amount</label>
+                <input id="tf-amount" type="number" min="0.01" step="0.01" placeholder="0.00" required />
+              </div>
+
+              <div class="field" id="tf-memo-field" hidden><label for="tf-memo">Memo (optional)</label>
+                <input id="tf-memo" type="text" placeholder="e.g. Rent, Invoice #123" />
+              </div>
+
+              <p class="form-error" id="tf-error" hidden></p>
+              <button class="submit-btn" type="submit" id="tf-submit">Send transfer</button>
+              <p class="secure-note">Reviewed before sending &middot; Hallmark standard safeguards</p>
+            </form>
+          </section>
+
+          <section class="side-panel transfer-history-panel">
+            <div class="section-header">
+              <p class="section-title">Transfer History</p>
+              <span class="filter-badge">Last 30 days</span>
+            </div>
+            <div class="tx-list" id="transfer-history-list"></div>
+          </section>
         </div>
-        <div class="cards-grid" id="virtual-cards-grid"></div>
       </main>
 
       <footer class="app-footer">
@@ -165,7 +175,7 @@
   <div id="toast" class="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase-config.js"></script>
-  <script src="cards.js"></script>
+  <script src="../assets/js/supabase-config.js"></script>
+  <script src="transfers.js"></script>
 </body>
 </html>

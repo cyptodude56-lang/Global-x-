@@ -45,7 +45,7 @@ async function resolveSession() {
     data: { session },
   } = await sb.auth.getSession();
   if (!session) {
-    window.location.href = "index.html";
+    window.location.href = "../index.html";
     return false;
   }
 
@@ -59,7 +59,7 @@ async function resolveSession() {
     // Logged in with Supabase Auth, but not linked to a demo customer —
     // e.g. link_auth_users.sql hasn't been run yet for this account.
     await sb.auth.signOut();
-    window.location.href = "index.html";
+    window.location.href = "../index.html";
     return false;
   }
 
@@ -71,7 +71,7 @@ async function resolveSession() {
     // here directly, or the auto-advance from confirm-email.html got
     // interrupted) — send them back to finish setup instead of showing an
     // empty, broken dashboard.
-    window.location.href = "complete-profile.html";
+    window.location.href = "../onboarding/complete-profile.html";
     return false;
   }
 
@@ -1044,7 +1044,7 @@ async function init() {
 
   el("btn-logout").addEventListener("click", async () => {
     await sb.auth.signOut();
-    window.location.href = "index.html";
+    window.location.href = "../index.html";
   });
 
   el("modal-close").addEventListener("click", closeModal);
@@ -1066,7 +1066,7 @@ async function init() {
   });
 
   el("btn-goto-cards").addEventListener("click", () => {
-    window.location.href = "cards.html";
+    window.location.href = "../cards/cards.html";
   });
 
   el("btn-freeze").addEventListener("click", () => {
@@ -1189,27 +1189,27 @@ async function init() {
       return;
     }
     if (btn.dataset.nav === "accounts") {
-      btn.addEventListener("click", () => (window.location.href = "accounts.html"));
+      btn.addEventListener("click", () => (window.location.href = "../accounts/accounts.html"));
       return;
     }
     if (btn.dataset.nav === "transfers") {
-      btn.addEventListener("click", () => (window.location.href = "transfers.html"));
+      btn.addEventListener("click", () => (window.location.href = "../transfers/transfers.html"));
       return;
     }
     if (btn.dataset.nav === "payments") {
-      btn.addEventListener("click", () => (window.location.href = "payments.html"));
+      btn.addEventListener("click", () => (window.location.href = "../payments/payments.html"));
       return;
     }
     if (btn.dataset.nav === "cards") {
-      btn.addEventListener("click", () => (window.location.href = "cards.html"));
+      btn.addEventListener("click", () => (window.location.href = "../cards/cards.html"));
       return;
     }
     if (btn.dataset.nav === "statements") { 
-      btn.addEventListener("click", () => (window.location.href = "statements.html")); 
+      btn.addEventListener("click", () => (window.location.href = "../statements/statements.html")); 
       return; }
 
     if (btn.dataset.nav === "settings") {
-      btn.addEventListener("click", () => (window.location.href = "settings.html"));
+      btn.addEventListener("click", () => (window.location.href = "../settings/settings.html"));
       return;
     }
     btn.addEventListener("click", () => {

@@ -128,7 +128,7 @@ async function init() {
     data: { session },
   } = await sb.auth.getSession();
   if (session) {
-    window.location.href = "dashboard.html";
+    window.location.href = "dashboard/dashboard.html";
   }
 }
 
@@ -264,7 +264,7 @@ el("verify-code-form").addEventListener("submit", async (e) => {
 
   stopCodeTimer();
   await recordLoginNotification(data.session.user.id);
-  window.location.href = "dashboard.html";
+  window.location.href = "dashboard/dashboard.html";
 });
 
 async function recordLoginNotification(authUserId) {
