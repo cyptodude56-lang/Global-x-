@@ -16,26 +16,37 @@ real database, the same as production code would.
 
 - `index.html`, `styles.css`, `app.js` — the app itself (still zero build
   step, still deployable straight to GitHub Pages)
-- `supabase-config.js` — where you paste your own project's URL + anon key
-- `schema.sql` — creates all 15 Phase‑02 tables (users, profiles, wallets,
-  ledger_accounts, ledger_transactions, ledger_entries, deposits,
-  withdrawals, transfers, beneficiaries, cards, notifications, kyc_status,
-  risk_events, audit_events) with Row Level Security enabled
-- `seed.sql` — every row from `hallmark_prototype_seed_data.xlsx`, generated
-  directly from that spreadsheet so there's no transcription drift
+- `assets/js/supabase-config.js` — where you paste your own project's URL + anon key
+- `schema.sql` — creates all 20 tables (users, profiles, wallets, cards,
+  profile_cards, beneficiaries, ledger_transactions, notifications, loans,
+  logins, kyc_submissions, kyc_documents, plus 8 legacy record-keeping
+  tables kept for compatibility — see the comment above their CREATE TABLE
+  statements in the file), all functions, triggers, and RLS policies. This
+  was reverse-generated from the live project via SQL introspection, not
+  from a maintained migration history, so it's a snapshot as of when it was
+  written rather than something that updates itself — re-export it after
+  future schema changes rather than trusting it indefinitely.
+- **`seed.sql` does not exist.** A fresh project starts with zero
+  customers; sign up through the app's own onboarding flow to create your
+  first one (that fires `create_default_wallets` automatically via the
+  `on_auth_user_created` trigger, which provisions checking + savings
+  wallets for the new user).
 
 ## One-time Supabase setup
 
 1. Create a free project at [supabase.com](https://supabase.com) if you
    don't have one yet.
-2. Open your project's **SQL Editor**, paste in the contents of
-   `schema.sql`, and run it.
-3. In a new query, paste in `seed.sql` and run it. You should see 15
-   `INSERT` confirmations (8 users, 8 profiles, 16 wallets, etc.).
+2. Open your project's **SQL Editor**, paste in the entire contents of
+   `schema.sql`, and run it top to bottom in one go. It creates every
+   table, function, trigger, and RLS policy this app needs.
+3. There's no seed data to load — skip straight to creating your first
+   customer by signing up through the app itself once it's pointed at your
+   new project (step 5 below). The signup trigger provisions checking and
+   savings wallets automatically.
 4. Go to **Settings → API**. Copy the **Project URL** and the **anon
    public** key (not the `service_role` key — never put that one in
    client-side code).
-5. Open `supabase-config.js` and paste those two values in.
+5. Open `assets/js/supabase-config.js` and paste those two values in.
 
 That's it — open `index.html` locally, or deploy to GitHub Pages exactly as
 before (create a repo, push these files, turn on Pages in Settings).
@@ -80,5 +91,5 @@ placeholder for one.
 ## Trying it locally
 
 Open `index.html` directly in a browser after filling in
-`supabase-config.js`, or serve the folder with e.g.
+`assets/js/supabase-config.js`, or serve the folder with e.g.
 `python3 -m http.server 8000`.
