@@ -709,6 +709,18 @@ function wirePayForm(prefix, formId) {
     }
 
     const memo = el(`${prefix}-memo`).value.trim();
+    const { error: postErr } = await sb.rpc("post_wallet_transaction", {
+      p_wallet_id: wallet.id,
+      p_amount: -amount,
+      p_transaction_type: "payment_out",
+      p_label: "Payment sent",
+      p_counterparty: memo ? `${recipientName} — ${memo}` : recipientName,
+    });
+    if (postErr) {
+      el(`${prefix}-error`).textContent = postErr.message || "Couldn't complete this payment.";
+      el(`${prefix}-error`).hidden = false;
+      return;
+    }
     wallet.balance -= amount;
     wallet.available -= amount;
     addPaymentHistory({

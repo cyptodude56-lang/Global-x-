@@ -893,6 +893,17 @@ function wireForm(kind) {
         counterparty = `${methodLabel(method)} (••••${acctNum.slice(-4)})`;
       }
       const wallet = acc.wallets[type];
+      const { error: postErr } = await sb.rpc("post_wallet_transaction", {
+        p_wallet_id: wallet.id,
+        p_amount: amount,
+        p_transaction_type: "deposit",
+        p_label: "Deposit",
+        p_counterparty: counterparty,
+      });
+      if (postErr) {
+        showError(postErr.message || "Couldn't complete this deposit.");
+        return;
+      }
       wallet.balance += amount;
       wallet.available += amount;
       addHistory(
@@ -952,6 +963,17 @@ function wireForm(kind) {
         showError(`Not enough ${wallet.currency} balance in ${type}.`);
         return;
       }
+      const { error: postErr } = await sb.rpc("post_wallet_transaction", {
+        p_wallet_id: wallet.id,
+        p_amount: -amount,
+        p_transaction_type: "payment_out",
+        p_label: "Sent to beneficiary",
+        p_counterparty: recipientName,
+      });
+      if (postErr) {
+        showError(postErr.message || "Couldn't complete this payment.");
+        return;
+      }
       wallet.balance -= amount;
       wallet.available -= amount;
       addHistory(
@@ -970,6 +992,17 @@ function wireForm(kind) {
       const toWallet = acc.wallets[to];
       if (fromWallet.balance < amount) {
         showError(`Not enough ${fromWallet.currency} balance in ${from}.`);
+        return;
+      }
+      const { error: postErr } = await sb.rpc("post_internal_transfer", {
+        p_from_wallet_id: fromWallet.id,
+        p_to_wallet_id: toWallet.id,
+        p_amount: amount,
+        p_from_counterparty: `To ${capitalize(to)}`,
+        p_to_counterparty: `From ${capitalize(from)}`,
+      });
+      if (postErr) {
+        showError(postErr.message || "Couldn't complete this transfer.");
         return;
       }
       fromWallet.balance -= amount;
@@ -1001,6 +1034,17 @@ function wireForm(kind) {
           return;
         }
         counterparty = `${methodLabel(method)} (••••${acctNum.slice(-4)})`;
+      }
+      const { error: postErr } = await sb.rpc("post_wallet_transaction", {
+        p_wallet_id: wallet.id,
+        p_amount: -amount,
+        p_transaction_type: "withdrawal",
+        p_label: "Withdrawal",
+        p_counterparty: counterparty,
+      });
+      if (postErr) {
+        showError(postErr.message || "Couldn't complete this withdrawal.");
+        return;
       }
       wallet.balance -= amount;
       wallet.available -= amount;

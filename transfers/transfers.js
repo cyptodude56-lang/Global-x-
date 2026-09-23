@@ -483,6 +483,17 @@ async function init() {
         showFormError(`Not enough ${fromWallet.currency} balance in ${fromType}.`);
         return;
       }
+      const { error: postErr } = await sb.rpc("post_internal_transfer", {
+        p_from_wallet_id: fromWallet.id,
+        p_to_wallet_id: toWallet.id,
+        p_amount: amount,
+        p_from_counterparty: `To ${capitalize(toType)}`,
+        p_to_counterparty: `From ${capitalize(fromType)}`,
+      });
+      if (postErr) {
+        showFormError(postErr.message || "Couldn't complete this transfer.");
+        return;
+      }
       fromWallet.balance -= amount;
       fromWallet.available -= amount;
       toWallet.balance += amount;
@@ -503,6 +514,17 @@ async function init() {
         return;
       }
       const memo = el("tf-memo").value.trim();
+      const { error: postErr } = await sb.rpc("post_wallet_transaction", {
+        p_wallet_id: fromWallet.id,
+        p_amount: -amount,
+        p_transaction_type: "payment_out",
+        p_label: "Sent to beneficiary",
+        p_counterparty: memo ? `${ben.name} — ${memo}` : ben.name,
+      });
+      if (postErr) {
+        showFormError(postErr.message || "Couldn't complete this payment.");
+        return;
+      }
       fromWallet.balance -= amount;
       fromWallet.available -= amount;
       addHistory({ id: newTxId(), label: "Sent to beneficiary", counterparty: memo ? `${ben.name} — ${memo}` : ben.name, amount, currency: fromWallet.currency, sign: "-", date: "Just now", status: "Completed", ref: null, walletLabel: capitalize(fromType) });
