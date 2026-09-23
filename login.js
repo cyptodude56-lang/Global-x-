@@ -24,6 +24,16 @@ let pendingEmail = null;
 let timerHandle = null;
 let codeRequestedAt = null;
 
+// Escapes text before it's interpolated into an innerHTML template — see
+// dashboard/app.js for the fuller rationale. Matters here because the
+// email confirmation message below echoes back exactly what the person
+// just typed into the signup form.
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[c]));
+}
+
 function showStatus(html) {
   el("login-status").innerHTML = html;
 }
@@ -222,7 +232,7 @@ el("signup-form").addEventListener("submit", async (e) => {
 
   el("signup-form").hidden = true;
   showStatus(
-    `<p class="helper-text">Check <strong>${el("signup-email").value.trim()}</strong> for a confirmation link, then click it to continue.</p>`
+    `<p class="helper-text">Check <strong>${escapeHtml(el("signup-email").value.trim())}</strong> for a confirmation link, then click it to continue.</p>`
   );
 });
 

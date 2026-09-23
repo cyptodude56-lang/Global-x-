@@ -65,6 +65,14 @@ function capitalize(s) {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 }
 
+// Escapes free text pulled from the database before it's interpolated into
+// an innerHTML template — see dashboard/app.js for the fuller rationale.
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[c]));
+}
+
 let SHOW_CENTS = true;
 let NOTIFY_TRANSACTIONS = true;
 function formatMoney(amount, currency) {
@@ -177,7 +185,7 @@ async function loadData() {
 
   const failed = [usersRes, profilesRes, walletsRes, beneficiariesRes, txRes, notifRes].find((r) => r.error);
   if (failed) {
-    document.querySelector(".dashboard-content").innerHTML = `<div class="error-box" style="color:var(--ink)">Couldn't load your data (${failed.error.message}).</div>`;
+    document.querySelector(".dashboard-content").innerHTML = `<div class="error-box" style="color:var(--ink)">Couldn't load your data (${escapeHtml(failed.error.message)}).</div>`;
     return;
   }
 
@@ -263,7 +271,7 @@ function renderNotifications() {
 
   const list = el("notif-list");
   list.innerHTML = ACCOUNT.notifications.length
-    ? ACCOUNT.notifications.map((n) => `<div class="notif-row${n.isRead ? "" : " unread"}"><p class="notif-msg">${n.message}</p></div>`).join("")
+    ? ACCOUNT.notifications.map((n) => `<div class="notif-row${n.isRead ? "" : " unread"}"><p class="notif-msg">${escapeHtml(n.message)}</p></div>`).join("")
     : '<p class="notif-empty">No notifications.</p>';
 }
 
@@ -294,7 +302,7 @@ function renderForm() {
     el("tf-to-field").hidden = true;
     el("tf-payee-field").hidden = false;
     el("tf-memo-field").hidden = false;
-    el("tf-payee").innerHTML = ACCOUNT.beneficiaries.map((b) => `<option value="${b.id}">${b.name} (${b.bankName})</option>`).join("");
+    el("tf-payee").innerHTML = ACCOUNT.beneficiaries.map((b) => `<option value="${b.id}">${escapeHtml(b.name)} (${escapeHtml(b.bankName)})</option>`).join("");
   }
 }
 
@@ -326,12 +334,12 @@ function renderHistory() {
     row.innerHTML = `
       <span class="tx-icon ${t.sign === "+" ? "in" : "out"}">${icon(t.sign === "+" ? "arrowDown" : "arrowUp")}</span>
       <div class="tx-main">
-        <p class="tx-label">${t.label}</p>
-        <p class="tx-sub">${subtitleParts.join(", ")}</p>
+        <p class="tx-label">${escapeHtml(t.label)}</p>
+        <p class="tx-sub">${escapeHtml(subtitleParts.join(", "))}</p>
       </div>
       <span class="tx-when">${t.date}</span>
       <span class="tx-amount ${t.sign === "+" ? "in" : "out"}">${t.sign}${formatMoney(t.amount, t.currency)}</span>
-      ${t.status !== "Completed" ? `<span class="tx-status-pill">${t.status}</span>` : ""}
+      ${t.status !== "Completed" ? `<span class="tx-status-pill">${escapeHtml(t.status)}</span>` : ""}
     `;
     list.appendChild(row);
   });

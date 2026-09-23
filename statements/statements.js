@@ -61,6 +61,14 @@ function mountIcons(root = document) {
   root.querySelectorAll("[data-icon]").forEach((elm) => { elm.innerHTML = icon(elm.dataset.icon); });
 }
 function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+
+// Escapes free text pulled from the database before it's interpolated into
+// an innerHTML template — see dashboard/app.js for the fuller rationale.
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[c]));
+}
 function lastFour(masked) {
   const match = String(masked || "").match(/(\d{4})\s*$/);
   return match ? match[1] : "????";
@@ -128,7 +136,7 @@ async function loadData() {
 
   const failed = [usersRes, profilesRes, walletsRes, txRes, notifRes].find((r) => r.error);
   if (failed) {
-    document.querySelector(".dashboard-content").innerHTML = `<div class="error-box" style="color:var(--ink)">Couldn't load your statements (${failed.error.message}).</div>`;
+    document.querySelector(".dashboard-content").innerHTML = `<div class="error-box" style="color:var(--ink)">Couldn't load your statements (${escapeHtml(failed.error.message)}).</div>`;
     return;
   }
 
@@ -235,7 +243,7 @@ function renderNotifications() {
   if (unread > 0) badge.textContent = unread > 9 ? "9+" : String(unread);
   const list = el("notif-list");
   list.innerHTML = ACCOUNT.notifications.length
-    ? ACCOUNT.notifications.map((n) => `<div class="notif-row${n.isRead ? "" : " unread"}"><p class="notif-msg">${n.message}</p></div>`).join("")
+    ? ACCOUNT.notifications.map((n) => `<div class="notif-row${n.isRead ? "" : " unread"}"><p class="notif-msg">${escapeHtml(n.message)}</p></div>`).join("")
     : '<p class="notif-empty">No notifications.</p>';
 }
 
@@ -277,7 +285,7 @@ function renderTable(rows) {
       return `
         <tr>
           <td>${t.dateLabel}</td>
-          <td>${t.label}${t.counterparty ? ` · ${t.counterparty}` : ""}</td>
+          <td>${escapeHtml(t.label)}${t.counterparty ? ` · ${escapeHtml(t.counterparty)}` : ""}</td>
           <td><span class="stmt-category-tag">${categoryLabel(t)}</span></td>
           <td>${t.walletType ? capitalize(t.walletType) : "—"}</td>
           <td style="text-align:right;" class="stmt-amount ${isIn ? "amt-in" : "amt-out"}">${isIn ? "+" : "−"} ${formatMoney(t.amount, t.currency).replace(/^-/, "")}</td>

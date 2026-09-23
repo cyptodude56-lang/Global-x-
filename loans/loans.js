@@ -68,6 +68,17 @@ function capitalize(s) {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 }
 
+// Escapes free text pulled from the database before it's interpolated into
+// an innerHTML template — see dashboard/app.js for the fuller rationale.
+// Matters here especially for loan purpose/reviewer_note, which (unlike
+// beneficiaries/profiles/cards/notifications) have no DB-level check
+// blocking `<`/`>` characters.
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[c]));
+}
+
 let SHOW_CENTS = true;
 function formatMoney(amount, currency) {
   const validCurrency = typeof currency === "string" && /^[A-Za-z]{3}$/.test(currency) ? currency.toUpperCase() : null;
@@ -227,7 +238,7 @@ async function loadData() {
 
   const failed = [usersRes, profilesRes, walletsRes, cardsRes, txRes, notifRes].find((r) => r.error);
   if (failed) {
-    document.querySelector(".dashboard-content").innerHTML = `<div class="error-box" style="color:var(--ink)">Couldn't load your loans (${failed.error.message}).</div>`;
+    document.querySelector(".dashboard-content").innerHTML = `<div class="error-box" style="color:var(--ink)">Couldn't load your loans (${escapeHtml(failed.error.message)}).</div>`;
     return;
   }
 
@@ -313,7 +324,7 @@ function renderNotifications() {
   const list = el("notif-list");
   list.innerHTML = ACCOUNT.notifications.length
     ? ACCOUNT.notifications
-        .map((n) => `<div class="notif-row${n.isRead ? "" : " unread"}"><p class="notif-msg">${n.message}</p></div>`)
+        .map((n) => `<div class="notif-row${n.isRead ? "" : " unread"}"><p class="notif-msg">${escapeHtml(n.message)}</p></div>`)
         .join("")
     : '<p class="notif-empty">No notifications.</p>';
 }
@@ -496,7 +507,7 @@ function renderTimeline(loan) {
       <div class="loan-timeline-dot">✕</div>
       <div class="loan-timeline-body">
         <p class="loan-timeline-title">Application Rejected</p>
-        <p class="loan-timeline-when">${loan.approval_decision_at ? formatDate(loan.approval_decision_at) : ""}${loan.reviewer_note ? " — " + loan.reviewer_note : ""}</p>
+        <p class="loan-timeline-when">${loan.approval_decision_at ? formatDate(loan.approval_decision_at) : ""}${loan.reviewer_note ? " — " + escapeHtml(loan.reviewer_note) : ""}</p>
       </div>`;
     host.appendChild(step);
   }
@@ -535,7 +546,7 @@ function renderStatusTab() {
       <div class="tx-icon in" style="background:var(--gold);">${icon("loans", 16)}</div>
       <div class="tx-main">
         <p class="tx-label">${capitalize(l.loan_type)} loan<span class="tx-status-pill">${STATUS_LABELS[l.status] || capitalize(l.status)}</span></p>
-        <p class="tx-sub">${l.purpose} · ${formatDate(l.submitted_at)}</p>
+        <p class="tx-sub">${escapeHtml(l.purpose)} · ${formatDate(l.submitted_at)}</p>
       </div>
       <span class="tx-amount out">${formatMoney(l.amount, l.currency)}</span>
     `;
@@ -566,7 +577,7 @@ function renderUsageTab() {
     row.className = "loan-usage-row";
     row.innerHTML = `
       <div class="loan-usage-top">
-        <span class="loan-usage-name">${capitalize(l.loan_type)} loan — ${l.purpose}</span>
+        <span class="loan-usage-name">${capitalize(l.loan_type)} loan — ${escapeHtml(l.purpose)}</span>
         <span class="loan-usage-amounts">${formatMoney(repaid, l.currency)} repaid of ${formatMoney(l.amount, l.currency)}</span>
       </div>
       <div class="loan-usage-track"><div class="loan-usage-fill" style="width:${pct}%"></div></div>

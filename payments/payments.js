@@ -61,6 +61,15 @@ function mountIcons(root = document) {
   root.querySelectorAll("[data-icon]").forEach((elm) => { elm.innerHTML = icon(elm.dataset.icon); });
 }
 function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+
+// Escapes free text pulled from the database (counterparties, notification
+// messages, payee names, card holder names) before it's interpolated into
+// an innerHTML template — see dashboard/app.js for the fuller rationale.
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[c]));
+}
 let SHOW_CENTS = true;
 let NOTIFY_TRANSACTIONS = true;
 function formatMoney(amount, currency) {
@@ -167,7 +176,7 @@ async function loadData() {
 
   const failed = [usersRes, profilesRes, walletsRes, beneficiariesRes, cardsRes, txRes, notifRes].find((r) => r.error);
   if (failed) {
-    document.querySelector(".dashboard-content").innerHTML = `<div class="error-box" style="color:var(--ink)">Couldn't load your data (${failed.error.message}).</div>`;
+    document.querySelector(".dashboard-content").innerHTML = `<div class="error-box" style="color:var(--ink)">Couldn't load your data (${escapeHtml(failed.error.message)}).</div>`;
     return;
   }
 
@@ -265,7 +274,7 @@ function renderNotifications() {
   if (unread > 0) badge.textContent = unread > 9 ? "9+" : String(unread);
   const list = el("notif-list");
   list.innerHTML = ACCOUNT.notifications.length
-    ? ACCOUNT.notifications.map((n) => `<div class="notif-row${n.isRead ? "" : " unread"}"><p class="notif-msg">${n.message}</p></div>`).join("")
+    ? ACCOUNT.notifications.map((n) => `<div class="notif-row${n.isRead ? "" : " unread"}"><p class="notif-msg">${escapeHtml(n.message)}</p></div>`).join("")
     : '<p class="notif-empty">No notifications.</p>';
 }
 
@@ -284,7 +293,7 @@ function renderPayForm(prefix, bankName) {
   if (payees.length === 0) {
     select.innerHTML = `<option value="">No saved payees at this bank</option>`;
   } else {
-    select.innerHTML = payees.map((b) => `<option value="${b.id}">${b.name}</option>`).join("");
+    select.innerHTML = payees.map((b) => `<option value="${b.id}">${escapeHtml(b.name)}</option>`).join("");
   }
   submitBtn.disabled = recipientState[prefix].mode === "saved" && payees.length === 0;
 }
@@ -357,8 +366,8 @@ function renderPayeesList() {
       (b) => `
     <div class="linked-account" data-payee-id="${b.id}">
       <div class="linked-info">
-        <span class="linked-logo">${b.name.slice(0, 2).toUpperCase()}</span>
-        <div class="linked-details"><p class="linked-name">${b.name}</p><p class="linked-meta">${b.bankName}</p></div>
+        <span class="linked-logo">${escapeHtml(b.name.slice(0, 2).toUpperCase())}</span>
+        <div class="linked-details"><p class="linked-name">${escapeHtml(b.name)}</p><p class="linked-meta">${escapeHtml(b.bankName)}</p></div>
       </div>
       <button class="ghost-btn danger-btn" data-remove-payee="${b.id}" style="flex:none;"><span data-icon="trash"></span> Remove</button>
     </div>`
@@ -520,10 +529,10 @@ function renderTxRow(t) {
   row.className = "tx-row" + (state.highlightIds.includes(t.id) ? " tx-enter" : "");
   row.innerHTML = `
     <span class="tx-icon ${t.sign === "+" ? "in" : "out"}">${icon(t.sign === "+" ? "arrowDown" : "arrowUp")}</span>
-    <div class="tx-main"><p class="tx-label">${t.label}</p><p class="tx-sub">${subtitleParts.join(", ")}</p></div>
+    <div class="tx-main"><p class="tx-label">${escapeHtml(t.label)}</p><p class="tx-sub">${escapeHtml(subtitleParts.join(", "))}</p></div>
     <span class="tx-when">${t.date}</span>
     <span class="tx-amount ${t.sign === "+" ? "in" : "out"}">${t.sign}${formatMoney(t.amount, t.currency)}</span>
-    ${t.status !== "Completed" ? `<span class="tx-status-pill">${t.status}</span>` : ""}
+    ${t.status !== "Completed" ? `<span class="tx-status-pill">${escapeHtml(t.status)}</span>` : ""}
   `;
   return row;
 }
@@ -578,7 +587,7 @@ function renderCard() {
   cardEl.innerHTML = `
     <div class="card-top"><span class="card-brand">Hallmark</span><span class="card-chip"></span></div>
     <div class="card-number">${c.revealed ? shownDisplay : hiddenDisplay}</div>
-    <div class="card-bottom"><span>${c.holder}</span><span class="card-network-mark">${(c.network || "").toUpperCase()}${c.isVirtual ? " · Virtual" : " Platinum"}</span></div>
+    <div class="card-bottom"><span>${escapeHtml(c.holder)}</span><span class="card-network-mark">${(c.network || "").toUpperCase()}${c.isVirtual ? " · Virtual" : " Platinum"}</span></div>
     ${c.frozen ? '<span class="frozen-tag">Frozen</span>' : ""}
   `;
   el("btn-freeze").textContent = c.frozen ? "Unfreeze card" : "Freeze card";

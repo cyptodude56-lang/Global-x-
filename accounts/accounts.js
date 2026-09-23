@@ -64,6 +64,14 @@ function capitalize(s) {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 }
 
+// Escapes free text pulled from the database before it's interpolated into
+// an innerHTML template — see dashboard/app.js for the fuller rationale.
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[c]));
+}
+
 let SHOW_CENTS = true;
 function formatMoney(amount, currency) {
   const validCurrency = typeof currency === "string" && /^[A-Za-z]{3}$/.test(currency) ? currency.toUpperCase() : null;
@@ -144,7 +152,7 @@ async function loadData() {
 
   const failed = [usersRes, profilesRes, walletsRes, notifRes].find((r) => r.error);
   if (failed) {
-    document.querySelector(".dashboard-content").innerHTML = `<div class="error-box" style="color:var(--ink)">Couldn't load your accounts (${failed.error.message}).</div>`;
+    document.querySelector(".dashboard-content").innerHTML = `<div class="error-box" style="color:var(--ink)">Couldn't load your accounts (${escapeHtml(failed.error.message)}).</div>`;
     return;
   }
 
@@ -215,7 +223,7 @@ function renderNotifications() {
   const list = el("notif-list");
   list.innerHTML = ACCOUNT.notifications.length
     ? ACCOUNT.notifications
-        .map((n) => `<div class="notif-row${n.isRead ? "" : " unread"}"><p class="notif-msg">${n.message}</p></div>`)
+        .map((n) => `<div class="notif-row${n.isRead ? "" : " unread"}"><p class="notif-msg">${escapeHtml(n.message)}</p></div>`)
         .join("")
     : '<p class="notif-empty">No notifications.</p>';
 }

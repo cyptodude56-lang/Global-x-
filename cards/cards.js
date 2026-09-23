@@ -63,6 +63,14 @@ function mountIcons(root = document) {
   root.querySelectorAll("[data-icon]").forEach((elm) => { elm.innerHTML = icon(elm.dataset.icon); });
 }
 function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+
+// Escapes free text pulled from the database before it's interpolated into
+// an innerHTML template — see dashboard/app.js for the fuller rationale.
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[c]));
+}
 function showToast(msg) {
   const t = el("toast");
   t.textContent = msg;
@@ -133,7 +141,7 @@ async function loadData() {
 
   const failed = [usersRes, profilesRes, cardsRes, notifRes].find((r) => r.error);
   if (failed) {
-    document.querySelector(".dashboard-content").innerHTML = `<div class="error-box" style="color:var(--ink)">Couldn't load your cards (${failed.error.message}).</div>`;
+    document.querySelector(".dashboard-content").innerHTML = `<div class="error-box" style="color:var(--ink)">Couldn't load your cards (${escapeHtml(failed.error.message)}).</div>`;
     return;
   }
 
@@ -199,7 +207,7 @@ function renderNotifications() {
   if (unread > 0) badge.textContent = unread > 9 ? "9+" : String(unread);
   const list = el("notif-list");
   list.innerHTML = ACCOUNT.notifications.length
-    ? ACCOUNT.notifications.map((n) => `<div class="notif-row${n.isRead ? "" : " unread"}"><p class="notif-msg">${n.message}</p></div>`).join("")
+    ? ACCOUNT.notifications.map((n) => `<div class="notif-row${n.isRead ? "" : " unread"}"><p class="notif-msg">${escapeHtml(n.message)}</p></div>`).join("")
     : '<p class="notif-empty">No notifications.</p>';
 }
 
@@ -219,7 +227,7 @@ function cardItemHtml(c) {
         </div>
         <div class="card-number">${numberToShow}</div>
         <div class="card-bottom">
-          <span>${c.holder}</span>
+          <span>${escapeHtml(c.holder)}</span>
           <span class="card-expiry"><span class="card-expiry-label">VALID THRU</span>${c.expiry || "--/--"}</span>
           <span class="card-network-mark">${(c.network || "").toUpperCase()}${c.isVirtual ? " · Virtual" : ""}</span>
         </div>

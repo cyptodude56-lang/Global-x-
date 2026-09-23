@@ -90,6 +90,18 @@ function capitalize(s) {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 }
 
+// Escapes free text pulled from the database (counterparties, notification
+// messages, card holder names, etc.) before it's interpolated into an
+// innerHTML template — those fields aren't guaranteed to be free of
+// `<`/`>`/quote characters at the client, so this is the last line of
+// defense against stored XSS via transaction memos, payee names, and the
+// like.
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[c]));
+}
+
 let SHOW_CENTS = true;
 
 function formatMoney(amount, currency) {
@@ -207,7 +219,7 @@ async function loadData() {
 
   const failed = [usersRes, profilesRes, walletsRes, cardsRes, beneficiariesRes, txRes, notifRes].find((r) => r.error);
   if (failed) {
-    document.querySelector(".dashboard-content").innerHTML = `<div class="error-box" style="color:var(--ink)">Couldn't load your data (${failed.error.message}). See README.md.</div>`;
+    document.querySelector(".dashboard-content").innerHTML = `<div class="error-box" style="color:var(--ink)">Couldn't load your data (${escapeHtml(failed.error.message)}). See README.md.</div>`;
     return;
   }
   // profile_cards is treated as optional/best-effort: if it errors (e.g. RLS
@@ -419,12 +431,12 @@ function renderLedger() {
     row.innerHTML = `
       <span class="tx-icon ${t.sign === "+" ? "in" : "out"}">${icon(t.sign === "+" ? "arrowDown" : "arrowUp")}</span>
       <div class="tx-main">
-        <p class="tx-label">${t.label}</p>
-        <p class="tx-sub">${subtitleParts.join(", ")}</p>
+        <p class="tx-label">${escapeHtml(t.label)}</p>
+        <p class="tx-sub">${escapeHtml(subtitleParts.join(", "))}</p>
       </div>
       <span class="tx-when">${t.date}, ${t.timeLabel}</span>
       <span class="tx-amount ${t.sign === "+" ? "in" : "out"}">${t.sign}${formatMoney(t.amount, t.currency)}</span>
-      ${t.status !== "Completed" ? `<span class="tx-status-pill">${t.status}</span>` : ""}
+      ${t.status !== "Completed" ? `<span class="tx-status-pill">${escapeHtml(t.status)}</span>` : ""}
     `;
     list.appendChild(row);
   });
@@ -496,7 +508,7 @@ function renderCard() {
     </div>
     <div class="card-number">${numberToShow}</div>
     <div class="card-bottom">
-      <span>${c.holder}</span>
+      <span>${escapeHtml(c.holder)}</span>
       <span class="card-expiry"><span class="card-expiry-label">VALID THRU</span>${c.expiry || "--/--"}</span>
       <span class="card-network-mark">${(c.network || "").toUpperCase()}${c.isVirtual ? " · Virtual" : ""}</span>
     </div>
@@ -616,7 +628,7 @@ function renderNotifications() {
     const row = document.createElement("div");
     row.className = "notif-row" + (n.isRead ? "" : " unread");
     row.innerHTML = `
-      <p class="notif-msg">${n.message}</p>
+      <p class="notif-msg">${escapeHtml(n.message)}</p>
       <p class="notif-meta">${formatDate(n.date)}, ${formatTime(n.date)}</p>
     `;
     list.appendChild(row);
@@ -773,7 +785,7 @@ function formFor(kind) {
         <div class="field" id="f-saved-field" ${hasPayees ? "" : "hidden"}><label for="f-beneficiary">Pay to</label>
           <select id="f-beneficiary">
             <option value="">Select a payee…</option>
-            ${acc.beneficiaries.map((b) => `<option value="${b.id}">${b.name} (${b.bankName})</option>`).join("")}
+            ${acc.beneficiaries.map((b) => `<option value="${b.id}">${escapeHtml(b.name)} (${escapeHtml(b.bankName)})</option>`).join("")}
           </select>
         </div>
         <div id="f-new-fields" ${hasPayees ? "hidden" : ""}>
