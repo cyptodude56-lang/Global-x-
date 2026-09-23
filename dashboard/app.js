@@ -629,6 +629,14 @@ const TICKER_PAIRS = [
   ["GBP", "USD"], ["EUR", "USD"], ["EUR", "GBP"],
 ];
 
+async function getFxRate(base, quote) {
+  if (base === quote) return 1;
+  const r = await fetch(`https://api.frankfurter.dev/v2/rate/${base.toLowerCase()}/${quote.toLowerCase()}`);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  const data = await r.json();
+  return Number(data.rate);
+}
+
 async function loadFxTicker() {
   const track = document.getElementById("fx-ticker-track");
   if (!track) return;
@@ -994,10 +1002,21 @@ function wireForm(kind) {
         showError(`Not enough ${fromWallet.currency} balance in ${from}.`);
         return;
       }
+      let convertedAmount = amount;
+      if (fromWallet.currency !== toWallet.currency) {
+        try {
+          const rate = await getFxRate(fromWallet.currency, toWallet.currency);
+          convertedAmount = Math.round(amount * rate * 100) / 100;
+        } catch (fxErr) {
+          showError("Exchange rate unavailable right now — try again in a moment.");
+          return;
+        }
+      }
       const { error: postErr } = await sb.rpc("post_internal_transfer", {
         p_from_wallet_id: fromWallet.id,
         p_to_wallet_id: toWallet.id,
-        p_amount: amount,
+        p_from_amount: amount,
+        p_to_amount: convertedAmount,
         p_from_counterparty: `To ${capitalize(to)}`,
         p_to_counterparty: `From ${capitalize(from)}`,
       });
@@ -1007,13 +1026,13 @@ function wireForm(kind) {
       }
       fromWallet.balance -= amount;
       fromWallet.available -= amount;
-      toWallet.balance += amount;
-      toWallet.available += amount;
+      toWallet.balance += convertedAmount;
+      toWallet.available += convertedAmount;
       addHistory(
         tx({ label: "Internal transfer", counterparty: `To ${capitalize(to)}`, amount, currency: fromWallet.currency, sign: "-", date: "Just now", walletLabel: capitalize(from) })
       );
       addHistory(
-        tx({ label: "Internal transfer", counterparty: `From ${capitalize(from)}`, amount, currency: toWallet.currency, sign: "+", date: "Just now", walletLabel: capitalize(to) })
+        tx({ label: "Internal transfer", counterparty: `From ${capitalize(from)}`, amount: convertedAmount, currency: toWallet.currency, sign: "+", date: "Just now", walletLabel: capitalize(to) })
       );
     }
 

@@ -97,6 +97,14 @@ function formatPan(raw) {
 }
 
 const TICKER_PAIRS = [["USD", "GBP"], ["USD", "EUR"], ["GBP", "EUR"], ["GBP", "USD"], ["EUR", "USD"], ["EUR", "GBP"]];
+async function getFxRate(base, quote) {
+  if (base === quote) return 1;
+  const r = await fetch(`https://api.frankfurter.dev/v2/rate/${base.toLowerCase()}/${quote.toLowerCase()}`);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  const data = await r.json();
+  return Number(data.rate);
+}
+
 async function loadFxTicker() {
   const track = document.getElementById("fx-ticker-track");
   if (!track) return;
@@ -178,7 +186,7 @@ async function loadData() {
     avatarColor: AVATAR_COLORS[Math.abs(hashCode(u.id)) % AVATAR_COLORS.length],
     wallets: {},
     walletTypeById: {},
-    beneficiaries: beneficiariesRes.data.map((b) => ({ id: b.id, name: b.beneficiary_name, bankName: b.bank_name })),
+    beneficiaries: beneficiariesRes.data.map((b) => ({ id: b.id, name: b.beneficiary_name, bankName: b.bank_name, accountNumber: b.account_number })),
     cards: [],
     notifications: notifRes.data
       .filter((n) => isNotificationVisible(n.created_at))
@@ -283,8 +291,8 @@ function renderPayForm(prefix, bankName) {
 
 async function lookupHallmarkAccount(accountNumber) {
   const { data, error } = await sb.rpc("lookup_hallmark_account", { p_account_number: accountNumber });
-  if (error || !data || !data[0]) return { found: false, holderName: null };
-  return { found: data[0].found, holderName: data[0].holder_name };
+  if (error || !data || !data[0]) return { found: false, holderName: null, currency: null };
+  return { found: data[0].found, holderName: data[0].holder_name, currency: data[0].currency };
 }
 
 function setRecipientMode(prefix, mode, bankName) {
@@ -491,7 +499,7 @@ function wireAddPayeeForm() {
       return;
     }
 
-    ACCOUNT.beneficiaries.push({ id: data.id, name: data.beneficiary_name, bankName: data.bank_name });
+    ACCOUNT.beneficiaries.push({ id: data.id, name: data.beneficiary_name, bankName: data.bank_name, accountNumber: data.account_number });
     el("np-name").value = "";
     el("np-name").classList.remove("lookup-found", "lookup-not-found");
     el("np-name").placeholder = addPayeeBankType === "within" ? "Enter an account number above" : "e.g. Acme Corp";
@@ -645,6 +653,7 @@ function wirePayForm(prefix, formId) {
     const bankName = el(formId).dataset.bank;
     const mode = recipientState[prefix].mode;
     let recipientName;
+    let recipientAccountNumber = null;
 
     if (mode === "saved") {
       const benId = el(`${prefix}-payee`).value;
@@ -655,8 +664,9 @@ function wirePayForm(prefix, formId) {
         return;
       }
       recipientName = ben.name;
+      recipientAccountNumber = ben.accountNumber || null;
     } else {
-      const recipientAccountNumber = el(`${prefix}-new-account`).value.trim();
+      recipientAccountNumber = el(`${prefix}-new-account`).value.trim();
       let recipientRoutingNumber = null;
 
       if (prefix === "wb") {
@@ -699,7 +709,7 @@ function wirePayForm(prefix, formId) {
           .select()
           .single();
         if (!saveErr && newBen) {
-          ACCOUNT.beneficiaries.push({ id: newBen.id, name: newBen.beneficiary_name, bankName: newBen.bank_name });
+          ACCOUNT.beneficiaries.push({ id: newBen.id, name: newBen.beneficiary_name, bankName: newBen.bank_name, accountNumber: newBen.account_number });
         } else if (saveErr) {
           console.warn("Couldn't save new payee (payment still proceeds):", saveErr);
         }
@@ -707,13 +717,45 @@ function wirePayForm(prefix, formId) {
     }
 
     const memo = el(`${prefix}-memo`).value.trim();
-    const { error: postErr } = await sb.rpc("post_wallet_transaction", {
-      p_wallet_id: wallet.id,
-      p_amount: -amount,
-      p_transaction_type: "payment_out",
-      p_label: "Payment sent",
-      p_counterparty: memo ? `${recipientName} — ${memo}` : recipientName,
-    });
+    const isWithinHallmark = prefix === "wb";
+    let postErr = null;
+
+    if (isWithinHallmark) {
+      const { found: stillFound, currency: toCurrency } = await lookupHallmarkAccount(recipientAccountNumber);
+      if (!stillFound) {
+        el(`${prefix}-error`).textContent = "That account number doesn't match a Hallmark account.";
+        el(`${prefix}-error`).hidden = false;
+        return;
+      }
+      let convertedAmount = amount;
+      if (toCurrency && toCurrency !== wallet.currency) {
+        try {
+          const rate = await getFxRate(wallet.currency, toCurrency);
+          convertedAmount = Math.round(amount * rate * 100) / 100;
+        } catch (fxErr) {
+          el(`${prefix}-error`).textContent = "Exchange rate unavailable right now — try again in a moment.";
+          el(`${prefix}-error`).hidden = false;
+          return;
+        }
+      }
+      ({ error: postErr } = await sb.rpc("post_hallmark_payment", {
+        p_from_wallet_id: wallet.id,
+        p_to_account_number: recipientAccountNumber,
+        p_from_amount: amount,
+        p_to_amount: convertedAmount,
+        p_from_counterparty: memo ? `${recipientName} — ${memo}` : recipientName,
+        p_to_counterparty: memo ? `${ACCOUNT.firstName} ${ACCOUNT.lastName} — ${memo}` : `${ACCOUNT.firstName} ${ACCOUNT.lastName}`,
+      }));
+    } else {
+      ({ error: postErr } = await sb.rpc("post_wallet_transaction", {
+        p_wallet_id: wallet.id,
+        p_amount: -amount,
+        p_transaction_type: "payment_out",
+        p_label: "Payment sent",
+        p_counterparty: memo ? `${recipientName} — ${memo}` : recipientName,
+      }));
+    }
+
     if (postErr) {
       el(`${prefix}-error`).textContent = postErr.message || "Couldn't complete this payment.";
       el(`${prefix}-error`).hidden = false;

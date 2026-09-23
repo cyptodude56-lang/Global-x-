@@ -96,6 +96,14 @@ const TICKER_PAIRS = [
   ["GBP", "USD"], ["EUR", "USD"], ["EUR", "GBP"],
 ];
 
+async function getFxRate(base, quote) {
+  if (base === quote) return 1;
+  const r = await fetch(`https://api.frankfurter.dev/v2/rate/${base.toLowerCase()}/${quote.toLowerCase()}`);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  const data = await r.json();
+  return Number(data.rate);
+}
+
 async function loadFxTicker() {
   const track = document.getElementById("fx-ticker-track");
   if (!track) return;
@@ -484,10 +492,21 @@ async function init() {
         showFormError(`Not enough ${fromWallet.currency} balance in ${fromType}.`);
         return;
       }
+      let convertedAmount = amount;
+      if (fromWallet.currency !== toWallet.currency) {
+        try {
+          const rate = await getFxRate(fromWallet.currency, toWallet.currency);
+          convertedAmount = Math.round(amount * rate * 100) / 100;
+        } catch (fxErr) {
+          showFormError("Exchange rate unavailable right now — try again in a moment.");
+          return;
+        }
+      }
       const { error: postErr } = await sb.rpc("post_internal_transfer", {
         p_from_wallet_id: fromWallet.id,
         p_to_wallet_id: toWallet.id,
-        p_amount: amount,
+        p_from_amount: amount,
+        p_to_amount: convertedAmount,
         p_from_counterparty: `To ${capitalize(toType)}`,
         p_to_counterparty: `From ${capitalize(fromType)}`,
       });
@@ -497,12 +516,12 @@ async function init() {
       }
       fromWallet.balance -= amount;
       fromWallet.available -= amount;
-      toWallet.balance += amount;
-      toWallet.available += amount;
+      toWallet.balance += convertedAmount;
+      toWallet.available += convertedAmount;
       addHistory({ id: newTxId(), label: "Internal transfer", counterparty: `To ${capitalize(toType)}`, amount, currency: fromWallet.currency, sign: "-", date: "Just now", status: "Completed", ref: null, walletLabel: capitalize(fromType) });
-      addHistory({ id: newTxId(), label: "Internal transfer", counterparty: `From ${capitalize(fromType)}`, amount, currency: toWallet.currency, sign: "+", date: "Just now", status: "Completed", ref: null, walletLabel: capitalize(toType) });
+      addHistory({ id: newTxId(), label: "Internal transfer", counterparty: `From ${capitalize(fromType)}`, amount: convertedAmount, currency: toWallet.currency, sign: "+", date: "Just now", status: "Completed", ref: null, walletLabel: capitalize(toType) });
       showToast("Transfer complete");
-      notifMessage = `You transferred ${formatMoney(amount, fromWallet.currency)} from ${capitalize(fromType)} to ${capitalize(toType)}.`;
+      notifMessage = `You transferred ${formatMoney(amount, fromWallet.currency)} from ${capitalize(fromType)} to ${capitalize(toType)}${fromWallet.currency !== toWallet.currency ? ` (received as ${formatMoney(convertedAmount, toWallet.currency)})` : ""}.`;
     } else {
       const benId = el("tf-payee").value;
       const ben = ACCOUNT.beneficiaries.find((b) => b.id === benId);
