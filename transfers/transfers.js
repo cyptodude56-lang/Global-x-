@@ -104,6 +104,12 @@ async function getFxRate(base, quote) {
   return Number(data.rate);
 }
 
+async function lookupHallmarkAccount(accountNumber) {
+  const { data, error } = await sb.rpc("lookup_hallmark_account", { p_account_number: accountNumber });
+  if (error || !data || !data[0]) return { found: false, holderName: null, currency: null };
+  return { found: data[0].found, holderName: data[0].holder_name, currency: data[0].currency };
+}
+
 async function loadFxTicker() {
   const track = document.getElementById("fx-ticker-track");
   if (!track) return;
@@ -188,7 +194,7 @@ async function loadData() {
     tier: p.tier || "Standard",
     avatarColor: AVATAR_COLORS[Math.abs(hashCode(u.id)) % AVATAR_COLORS.length],
     wallets: {},
-    beneficiaries: beneficiariesRes.data.map((b) => ({ id: b.id, name: b.beneficiary_name, bankName: b.bank_name })),
+    beneficiaries: beneficiariesRes.data.map((b) => ({ id: b.id, name: b.beneficiary_name, bankName: b.bank_name, accountNumber: b.account_number })),
     notifications: notifRes.data
       .filter((n) => isNotificationVisible(n.created_at))
       .map((n) => ({ id: n.id, message: n.message, isRead: n.is_read, date: n.created_at })),
@@ -534,13 +540,44 @@ async function init() {
         return;
       }
       const memo = el("tf-memo").value.trim();
-      const { error: postErr } = await sb.rpc("post_wallet_transaction", {
-        p_wallet_id: fromWallet.id,
-        p_amount: -amount,
-        p_transaction_type: "payment_out",
-        p_label: "Sent to beneficiary",
-        p_counterparty: memo ? `${ben.name} — ${memo}` : ben.name,
-      });
+      const recipientLabel = memo ? `${ben.name} — ${memo}` : ben.name;
+
+      // A saved payee whose account number matches a real Hallmark customer
+      // needs to actually be credited via post_hallmark_payment —
+      // post_wallet_transaction alone only ever debits the sender.
+      const { found: isHallmarkAccount, currency: toCurrency } = ben.accountNumber
+        ? await lookupHallmarkAccount(ben.accountNumber)
+        : { found: false, currency: null };
+
+      let postErr;
+      if (isHallmarkAccount) {
+        let convertedAmount = amount;
+        if (toCurrency && toCurrency !== fromWallet.currency) {
+          try {
+            const rate = await getFxRate(fromWallet.currency, toCurrency);
+            convertedAmount = Math.round(amount * rate * 100) / 100;
+          } catch (fxErr) {
+            showFormError("Exchange rate unavailable right now — try again in a moment.");
+            return;
+          }
+        }
+        ({ error: postErr } = await sb.rpc("post_hallmark_payment", {
+          p_from_wallet_id: fromWallet.id,
+          p_to_account_number: ben.accountNumber,
+          p_from_amount: amount,
+          p_to_amount: convertedAmount,
+          p_from_counterparty: recipientLabel,
+          p_to_counterparty: `${ACCOUNT.firstName} ${ACCOUNT.lastName}`,
+        }));
+      } else {
+        ({ error: postErr } = await sb.rpc("post_wallet_transaction", {
+          p_wallet_id: fromWallet.id,
+          p_amount: -amount,
+          p_transaction_type: "payment_out",
+          p_label: "Sent to beneficiary",
+          p_counterparty: recipientLabel,
+        }));
+      }
       if (postErr) {
         showFormError(postErr.message || "Couldn't complete this payment.");
         return;

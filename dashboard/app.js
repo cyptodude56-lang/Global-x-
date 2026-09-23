@@ -280,7 +280,7 @@ async function loadData() {
   ACCOUNT.cards.sort((a, b) => Number(a.isVirtual) - Number(b.isVirtual));
 
   beneficiariesRes.data.forEach((b) => {
-    ACCOUNT.beneficiaries.push({ id: b.id, name: b.beneficiary_name, bankName: b.bank_name });
+    ACCOUNT.beneficiaries.push({ id: b.id, name: b.beneficiary_name, bankName: b.bank_name, accountNumber: b.account_number });
   });
 
   txRes.data.forEach((t) => {
@@ -637,6 +637,12 @@ async function getFxRate(base, quote) {
   return Number(data.rate);
 }
 
+async function lookupHallmarkAccount(accountNumber) {
+  const { data, error } = await sb.rpc("lookup_hallmark_account", { p_account_number: accountNumber });
+  if (error || !data || !data[0]) return { found: false, holderName: null, currency: null };
+  return { found: data[0].found, holderName: data[0].holder_name, currency: data[0].currency };
+}
+
 async function loadFxTicker() {
   const track = document.getElementById("fx-ticker-track");
   if (!track) return;
@@ -925,6 +931,8 @@ function wireForm(kind) {
       const wallet = acc.wallets[type];
       const mode = form.dataset.sendMode;
       let recipientName;
+      let recipientAccountNumber = null;
+      let recipientRoutingNumber = null;
 
       if (mode === "saved") {
         const benId = el("f-beneficiary").value;
@@ -934,50 +942,84 @@ function wireForm(kind) {
           return;
         }
         recipientName = ben.name;
+        recipientAccountNumber = ben.accountNumber || null;
       } else {
-        const newAccount = el("f-new-account").value.trim();
-        const newRouting = el("f-new-routing").value.trim();
-        if (!newAccount) {
+        recipientAccountNumber = el("f-new-account").value.trim();
+        recipientRoutingNumber = el("f-new-routing").value.trim();
+        if (!recipientAccountNumber) {
           showError("Enter the recipient's account number.");
           return;
         }
-        if (!newRouting) {
+        if (!recipientRoutingNumber) {
           showError("Enter the recipient's routing number.");
           return;
         }
-        recipientName = el("f-new-name").value.trim() || `Account ending in ${newAccount.slice(-4)}`;
-
-        if (el("f-save-payee").checked) {
-          const { data: newBen, error: saveErr } = await sb
-            .from("beneficiaries")
-            .insert({
-              user_id: CURRENT_USER_ID,
-              beneficiary_name: recipientName,
-              bank_name: "Mock Partner Bank",
-              account_number: newAccount,
-              routing_number: newRouting,
-            })
-            .select()
-            .single();
-          if (!saveErr && newBen) {
-            acc.beneficiaries.push({ id: newBen.id, name: newBen.beneficiary_name, bankName: newBen.bank_name });
-          } else if (saveErr) {
-            console.warn("Couldn't save new payee (payment still proceeds):", saveErr);
-          }
-        }
+        recipientName = el("f-new-name").value.trim() || `Account ending in ${recipientAccountNumber.slice(-4)}`;
       }
 
       if (wallet.balance < amount) {
         showError(`Not enough ${wallet.currency} balance in ${type}.`);
         return;
       }
-      const { error: postErr } = await sb.rpc("post_wallet_transaction", {
-        p_wallet_id: wallet.id,
-        p_amount: -amount,
-        p_transaction_type: "payment_out",
-        p_label: "Sent to beneficiary",
-        p_counterparty: recipientName,
-      });
+
+      // A recipient account number that matches a real Hallmark customer
+      // means this is an internal transfer and needs to actually credit
+      // them via post_hallmark_payment — post_wallet_transaction alone
+      // only ever debits the sender.
+      const { found: isHallmarkAccount, currency: toCurrency } = recipientAccountNumber
+        ? await lookupHallmarkAccount(recipientAccountNumber)
+        : { found: false, currency: null };
+
+      if (mode === "new" && el("f-save-payee").checked) {
+        const bankName = isHallmarkAccount ? "Hallmark Clearing House" : "Mock Partner Bank";
+        const { data: newBen, error: saveErr } = await sb
+          .from("beneficiaries")
+          .insert({
+            user_id: CURRENT_USER_ID,
+            beneficiary_name: recipientName,
+            bank_name: bankName,
+            account_number: recipientAccountNumber,
+            routing_number: recipientRoutingNumber,
+          })
+          .select()
+          .single();
+        if (!saveErr && newBen) {
+          acc.beneficiaries.push({ id: newBen.id, name: newBen.beneficiary_name, bankName: newBen.bank_name, accountNumber: newBen.account_number });
+        } else if (saveErr) {
+          console.warn("Couldn't save new payee (payment still proceeds):", saveErr);
+        }
+      }
+
+      let postErr;
+      if (isHallmarkAccount) {
+        let convertedAmount = amount;
+        if (toCurrency && toCurrency !== wallet.currency) {
+          try {
+            const rate = await getFxRate(wallet.currency, toCurrency);
+            convertedAmount = Math.round(amount * rate * 100) / 100;
+          } catch (fxErr) {
+            showError("Exchange rate unavailable right now — try again in a moment.");
+            return;
+          }
+        }
+        ({ error: postErr } = await sb.rpc("post_hallmark_payment", {
+          p_from_wallet_id: wallet.id,
+          p_to_account_number: recipientAccountNumber,
+          p_from_amount: amount,
+          p_to_amount: convertedAmount,
+          p_from_counterparty: recipientName,
+          p_to_counterparty: `${acc.firstName} ${acc.lastName}`,
+        }));
+      } else {
+        ({ error: postErr } = await sb.rpc("post_wallet_transaction", {
+          p_wallet_id: wallet.id,
+          p_amount: -amount,
+          p_transaction_type: "payment_out",
+          p_label: "Sent to beneficiary",
+          p_counterparty: recipientName,
+        }));
+      }
+
       if (postErr) {
         showError(postErr.message || "Couldn't complete this payment.");
         return;
