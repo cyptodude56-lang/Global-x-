@@ -169,19 +169,6 @@ create table public.loans (
   created_at                  timestamptz not null default now()
 );
 
-create table public.logins (
-  user_id      uuid primary key references public.users(id),
-  email        text not null,
-  username     text not null,
-  password     text not null,
-  environment  text not null default 'sandbox'
-);
--- SECURITY NOTE: this table stores a `password` value directly, separate
--- from Supabase's own auth.users. Confirm what's actually written here
--- (hash vs. plaintext) before this goes anywhere near real users — this
--- was flagged during schema review and not something this migration
--- changes on its own.
-
 -- ---- Legacy tables intentionally left out of this file -------------------
 -- deposits, withdrawals, transfers, ledger_accounts, ledger_entries,
 -- risk_events, and audit_events used to live here — an earlier
@@ -199,6 +186,14 @@ create table public.logins (
 -- install starts with nothing to migrate; on an existing project this data
 -- should stay put (or be exported/archived deliberately) unless someone
 -- who understands where it came from decides otherwise.
+--
+-- logins (user_id, email, username, password, environment) is excluded for
+-- a different reason: it stored plaintext passwords from a pre-Supabase-auth
+-- design and was never read or written by any client code or function here
+-- — real authentication goes entirely through Supabase's own auth.users
+-- (email OTP, see login.js). Confirmed during the handoff review to hold
+-- only the original seed/demo customers' rows, never a real person's
+-- credentials, so it was dropped outright rather than carried forward.
 
 -- ---- KYC document upload flow ------------------------------------------
 -- kyc_status and kyc_submissions are both actively used: submit_kyc()
@@ -278,9 +273,6 @@ alter table public.profile_cards enable row level security;
 alter table public.profiles enable row level security;
 alter table public.users enable row level security;
 alter table public.wallets enable row level security;
--- logins has no RLS policy defined in the source project; RLS is not
--- enabled on it there either. Treat that table as needing a security
--- review (see the note by its CREATE TABLE above) before relying on it.
 
 -- ---- Policies ------------------------------------------------------------
 -- Every owner_read / owner_insert / owner_update / owner_delete policy below
