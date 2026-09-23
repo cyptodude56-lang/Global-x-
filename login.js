@@ -28,6 +28,21 @@ function showStatus(html) {
   el("login-status").innerHTML = html;
 }
 
+function showToast(msg) {
+  const t = el("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(showToast._timer);
+  showToast._timer = setTimeout(() => t.classList.remove("show"), 2200);
+}
+
+document.querySelectorAll("[data-coming-soon]").forEach((elm) => {
+  elm.addEventListener("click", (e) => {
+    e.preventDefault();
+    showToast(`${elm.dataset.comingSoon} coming soon in a later phase`);
+  });
+});
+
 function showFormError(msg) {
   const e = el("login-error");
   e.textContent = msg;

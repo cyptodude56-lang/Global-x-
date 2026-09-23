@@ -1587,15 +1587,20 @@ a { color: inherit; }
 
 .app-footer {
   margin-top: auto;
-  padding: 16px 32px;
+  padding: 14px 32px;
   border-top: 1px solid var(--line);
   display: flex;
   justify-content: space-between;
+  align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 8px 28px;
   font-size: 0.76rem;
   color: var(--muted);
 }
+.app-footer-links { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.app-footer-links a { color: var(--muted); text-decoration: none; }
+.app-footer-links a:hover { color: var(--gold-dark); }
+.app-footer-meta { display: flex; flex-wrap: wrap; gap: 4px 20px; }
 
 /* Toast for decorative / not-yet-built links */
 
@@ -1616,6 +1621,8 @@ a { color: inherit; }
   z-index: 50;
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+/* Toast on the dark login hero: --ink background would vanish against it */
+.toast.toast-on-dark { background: var(--gold); color: var(--ink); }
 
 @media (prefers-reduced-motion: reduce) {
   .tx-enter { animation: none; }
@@ -1850,7 +1857,7 @@ a { color: inherit; }
 
 /* Print: statement only, chrome hidden */
 @media print {
-  .fx-ticker, .sidebar, .topbar-dark, .app-footer, .toast, .page-header,
+  .fx-ticker, .sidebar, .topbar-dark, .app-footer, .auth-footer, .toast, .page-header,
   .statement-card__actions, .stmt-tabs, .stmt-selects {
     display: none !important;
   }
@@ -2003,6 +2010,34 @@ a { color: inherit; }
   text-align: center;
   letter-spacing: 0.05em;
   color: rgba(200, 190, 165, 0.45);
+}
+
+/* Low-profile footer for the sign-in/sign-up hero: legal links only, no
+   nav — nobody is signed in here yet. Fixed and translucent so it never
+   competes with the centered panel or the canvas animation behind it. */
+.auth-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+  padding: 14px 24px;
+  font-size: 0.72rem;
+  color: rgba(214, 205, 180, 0.55);
+  background: linear-gradient(0deg, rgba(16, 21, 31, 0.85) 0%, rgba(16, 21, 31, 0) 100%);
+  pointer-events: none;
+}
+.auth-footer-copy, .auth-footer-links { pointer-events: auto; }
+.auth-footer-links { display: flex; flex-wrap: wrap; gap: 4px 18px; }
+.auth-footer-links a { color: rgba(233, 217, 168, 0.75); text-decoration: none; }
+.auth-footer-links a:hover { color: var(--gold-soft); }
+@media (max-width: 640px) {
+  .auth-footer { justify-content: center; text-align: center; padding: 10px 16px 12px; }
 }
 
 @media (max-width: 480px) {

@@ -113,6 +113,7 @@ html { scroll-behavior: smooth; }
 
 .page-header,
 .login-panel { animation: m-rise 0.5s var(--m-ease) backwards; }
+.auth-footer { animation: m-fade 0.6s ease 0.5s backwards; }
 
 .balance-card, .side-panel, .statement-card, .settings-nav, .pay-tabs, .request-panel {
   animation: m-rise 0.5s var(--m-ease) 70ms backwards;
@@ -122,6 +123,7 @@ html { scroll-behavior: smooth; }
 }
 .quick-actions-row { animation: m-rise 0.5s var(--m-ease) 210ms backwards; }
 .transactions-card, .goals-banner { animation: m-rise 0.5s var(--m-ease) 280ms backwards; }
+.app-footer { animation: m-rise 0.5s var(--m-ease) 350ms backwards; }
 
 /* Tabs and settings sections fade in each time they are switched to */
 .settings-panel:not([hidden]),
