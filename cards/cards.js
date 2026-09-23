@@ -220,6 +220,7 @@ function cardItemHtml(c) {
         <div class="card-number">${numberToShow}</div>
         <div class="card-bottom">
           <span>${c.holder}</span>
+          <span class="card-expiry"><span class="card-expiry-label">VALID THRU</span>${c.expiry || "--/--"}</span>
           <span class="card-network-mark">${(c.network || "").toUpperCase()}${c.isVirtual ? " · Virtual" : ""}</span>
         </div>
       </div>
