@@ -13,7 +13,7 @@
 //   - Loan Usage shows real disbursed amounts for the customer's own loans.
 //     Repayments aren't tracked yet in this phase, so "repaid" is honestly
 //     shown as $0 with a note, not invented.
-//   - Loan Limit is a demo heuristic computed from this account's real
+//   - Loan Limit is a heuristic estimate computed from this account's real
 //     wallets/transactions/loan history (see computeLoanLimit below) — it's
 //     clearly labeled as an estimate, not a real underwriting decision.
 // ---------------------------------------------------------------------------
@@ -129,7 +129,7 @@ async function loadFxTicker() {
 }
 
 // ---------------------------------------------------------------------------
-// Loan math — clearly-labeled demo estimates, not real underwriting.
+// Loan math — clearly-labeled estimates, not real underwriting.
 // ---------------------------------------------------------------------------
 
 // Flat annual rate per loan type, used only to preview/store an estimated
@@ -146,7 +146,7 @@ function estimateRepayment(amount, months, loanType) {
 
 // Weighted "loan limit" score, computed entirely from this account's real
 // data (not invented). This mirrors the shape of a typical scoring model
-// but is a demo heuristic — see the disclaimer shown next to it in the UI.
+// but is a heuristic estimate — see the disclaimer shown next to it in the UI.
 function computeLoanLimit(account) {
   const now = Date.now();
   const DAY = 24 * 60 * 60 * 1000;
@@ -156,7 +156,7 @@ function computeLoanLimit(account) {
   const activityScore = Math.min(100, recentTx * 8);
 
   // Deposit History — total balance held across wallets, relative to a
-  // flat benchmark (this is a demo, not a real underwriting threshold).
+  // flat benchmark (this is an estimate, not a real underwriting threshold).
   const totalBalance = account.wallets.reduce((s, w) => s + Number(w.current_balance || 0), 0);
   const depositScore = Math.min(100, (totalBalance / 15000) * 100);
 
@@ -196,7 +196,7 @@ function computeLoanLimit(account) {
 
   const overallScore = factors.reduce((s, f) => s + f.score * (f.weight / 100), 0);
 
-  // Available limit — a bounded, demo-only formula: up to half of total
+  // Available limit — a bounded, estimate-only formula: up to half of total
   // balance, scaled by the overall score, floored so it never reads as
   // literally zero for an active account.
   const rawLimit = totalBalance * 0.5 * (overallScore / 100);

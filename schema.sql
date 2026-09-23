@@ -182,79 +182,29 @@ create table public.logins (
 -- was flagged during schema review and not something this migration
 -- changes on its own.
 
--- ---- Legacy / parallel record-keeping tables --------------------------
--- The tables below (deposits, withdrawals, transfers, ledger_accounts,
--- ledger_entries, kyc_status, risk_events, audit_events) still carry an
--- `environment` column (default 'sandbox', CHECK'd to 'sandbox'/'production')
--- and, in several cases, RLS policies that gate SELECT on
--- environment = 'sandbox'. The app's current write path (post_wallet_transaction,
--- post_internal_transfer, post_hallmark_payment) only writes to `wallets` and
--- `ledger_transactions` — neither of which has this column anymore. Confirm
--- whether anything still writes to the tables below before removing this
--- scaffolding; if nothing does, they may be safe to drop entirely in a
--- future cleanup.
+-- ---- Legacy tables intentionally left out of this file -------------------
+-- deposits, withdrawals, transfers, ledger_accounts, ledger_entries,
+-- risk_events, and audit_events used to live here — an earlier
+-- double-entry ledger design that was superseded by wallets +
+-- ledger_transactions (see post_wallet_transaction / post_internal_transfer /
+-- post_hallmark_payment below). A repo-wide search confirmed no client code
+-- and no function in this file reads or writes any of the seven, so a
+-- brand-new project built from this file doesn't need them.
+--
+-- IMPORTANT: on the live project this was exported from, these seven tables
+-- are NOT empty (checked directly: deposits 5, withdrawals 8, transfers 12,
+-- ledger_accounts 24, ledger_entries 62, risk_events 2, audit_events 24 rows
+-- as of the handoff review) — real historical rows, not just scaffolding.
+-- Do not drop them there. They're excluded here only because a fresh
+-- install starts with nothing to migrate; on an existing project this data
+-- should stay put (or be exported/archived deliberately) unless someone
+-- who understands where it came from decides otherwise.
 
-create table public.deposits (
-  id              uuid primary key default gen_random_uuid(),
-  transaction_id  uuid references public.ledger_transactions(id),
-  user_id         uuid not null references public.users(id),
-  wallet_id       uuid references public.wallets(id),
-  method          text,
-  amount          numeric(14,2) not null,
-  currency        text not null,
-  status          text not null default 'completed',
-  created_at      timestamptz not null default now(),
-  environment     text not null default 'sandbox' check (environment = any (array['sandbox','production']))
-);
-
-create table public.withdrawals (
-  id              uuid primary key default gen_random_uuid(),
-  transaction_id  uuid references public.ledger_transactions(id),
-  user_id         uuid not null references public.users(id),
-  wallet_id       uuid references public.wallets(id),
-  method          text,
-  amount          numeric(14,2) not null,
-  currency        text not null,
-  status          text not null default 'completed',
-  created_at      timestamptz not null default now(),
-  environment     text not null default 'sandbox' check (environment = any (array['sandbox','production']))
-);
-
-create table public.transfers (
-  id              uuid primary key default gen_random_uuid(),
-  transaction_id  uuid references public.ledger_transactions(id),
-  user_id         uuid not null references public.users(id),
-  wallet_id       uuid references public.wallets(id),
-  direction       text not null check (direction = any (array['in','out'])),
-  counterparty    text,
-  amount          numeric(14,2) not null,
-  currency        text not null,
-  status          text not null default 'completed',
-  created_at      timestamptz not null default now(),
-  environment     text not null default 'sandbox' check (environment = any (array['sandbox','production']))
-);
-
-create table public.ledger_accounts (
-  id           uuid primary key default gen_random_uuid(),
-  wallet_id    uuid references public.wallets(id),
-  user_id      uuid not null references public.users(id),
-  account_type text not null,
-  name         text,
-  currency     text not null,
-  balance      numeric(14,2) not null default 0,
-  environment  text not null default 'sandbox' check (environment = any (array['sandbox','production']))
-);
-
-create table public.ledger_entries (
-  id                 uuid primary key default gen_random_uuid(),
-  transaction_id     uuid not null references public.ledger_transactions(id),
-  ledger_account_id  uuid not null references public.ledger_accounts(id),
-  entry_type         text not null check (entry_type = any (array['debit','credit'])),
-  amount             numeric(14,2) not null,
-  currency           text not null,
-  posted_at          timestamptz not null default now(),
-  environment        text not null default 'sandbox' check (environment = any (array['sandbox','production']))
-);
+-- ---- KYC document upload flow ------------------------------------------
+-- kyc_status and kyc_submissions are both actively used: submit_kyc()
+-- inserts into kyc_submissions, and the kyc_submissions_sync trigger keeps
+-- kyc_status in step via sync_kyc_status(). Neither carries `environment`
+-- scaffolding anymore — every KYC record here is real customer data.
 
 create table public.kyc_status (
   id                   uuid primary key default gen_random_uuid(),
@@ -265,33 +215,8 @@ create table public.kyc_status (
   submitted_at         timestamptz,
   reviewed_at          timestamptz,
   risk_rating          text,
-  notes                text,
-  environment          text not null default 'sandbox' check (environment = any (array['sandbox','production']))
+  notes                text
 );
-
-create table public.risk_events (
-  id           uuid primary key default gen_random_uuid(),
-  user_id      uuid not null references public.users(id),
-  event_type   text,
-  severity     text,
-  description  text,
-  status       text,
-  created_at   timestamptz not null default now(),
-  environment  text not null default 'sandbox' check (environment = any (array['sandbox','production']))
-);
-
-create table public.audit_events (
-  id             uuid primary key default gen_random_uuid(),
-  actor_user_id  uuid references public.users(id),
-  action         text not null,
-  target_type    text,
-  target_id      uuid,
-  ip_address     text,
-  created_at     timestamptz not null default now(),
-  environment    text not null default 'sandbox' check (environment = any (array['sandbox','production']))
-);
-
--- ---- KYC document upload flow ------------------------------------------
 
 create table public.kyc_submissions (
   id                uuid primary key,
@@ -302,8 +227,7 @@ create table public.kyc_submissions (
   consent_version   text not null check (char_length(consent_version) >= 1 and char_length(consent_version) <= 32),
   submitted_at      timestamptz not null default now(),
   reviewed_at       timestamptz,
-  reviewer_note     text check (char_length(reviewer_note) <= 500),
-  environment       text not null default 'sandbox' check (environment = any (array['sandbox','production']))
+  reviewer_note     text check (char_length(reviewer_note) <= 500)
 );
 
 create unique index kyc_one_active_per_user on public.kyc_submissions (auth_user_id) where (status = any (array['in_review','approved']));
@@ -324,52 +248,36 @@ create table public.kyc_documents (
 -- Indexes (beyond the primary keys / unique constraints already declared above)
 -- ============================================================================
 
-create index audit_events_actor_user_id_idx on public.audit_events using btree (actor_user_id);
 create index beneficiaries_user_id_idx on public.beneficiaries using btree (user_id);
 create index cards_user_id_idx on public.cards using btree (user_id);
-create index deposits_user_id_idx on public.deposits using btree (user_id);
 create index kyc_documents_user_idx on public.kyc_documents using btree (auth_user_id);
 create index kyc_status_user_id_idx on public.kyc_status using btree (user_id);
 create index kyc_submissions_user_idx on public.kyc_submissions using btree (auth_user_id, submitted_at desc);
-create index ledger_accounts_user_id_idx on public.ledger_accounts using btree (user_id);
-create index ledger_accounts_wallet_id_idx on public.ledger_accounts using btree (wallet_id);
-create index ledger_entries_ledger_account_id_idx on public.ledger_entries using btree (ledger_account_id);
-create index ledger_entries_transaction_id_idx on public.ledger_entries using btree (transaction_id);
 create index ledger_transactions_user_id_idx on public.ledger_transactions using btree (user_id);
 create index ledger_transactions_wallet_id_idx on public.ledger_transactions using btree (wallet_id);
 create index loans_status_idx on public.loans using btree (status);
 create index loans_user_id_idx on public.loans using btree (user_id);
 create index notifications_user_id_idx on public.notifications using btree (user_id);
 create index profiles_user_id_idx on public.profiles using btree (user_id);
-create index risk_events_user_id_idx on public.risk_events using btree (user_id);
-create index transfers_user_id_idx on public.transfers using btree (user_id);
 create index wallets_user_id_idx on public.wallets using btree (user_id);
 create unique index wallets_user_type_key on public.wallets using btree (user_id, wallet_type);
-create index withdrawals_user_id_idx on public.withdrawals using btree (user_id);
 
 -- ============================================================================
 -- Row Level Security
 -- ============================================================================
 
-alter table public.audit_events enable row level security;
 alter table public.beneficiaries enable row level security;
 alter table public.cards enable row level security;
-alter table public.deposits enable row level security;
 alter table public.kyc_documents enable row level security;
 alter table public.kyc_status enable row level security;
 alter table public.kyc_submissions enable row level security;
-alter table public.ledger_accounts enable row level security;
-alter table public.ledger_entries enable row level security;
 alter table public.ledger_transactions enable row level security;
 alter table public.loans enable row level security;
 alter table public.notifications enable row level security;
 alter table public.profile_cards enable row level security;
 alter table public.profiles enable row level security;
-alter table public.risk_events enable row level security;
-alter table public.transfers enable row level security;
 alter table public.users enable row level security;
 alter table public.wallets enable row level security;
-alter table public.withdrawals enable row level security;
 -- logins has no RLS policy defined in the source project; RLS is not
 -- enabled on it there either. Treat that table as needing a security
 -- review (see the note by its CREATE TABLE above) before relying on it.
@@ -377,11 +285,6 @@ alter table public.withdrawals enable row level security;
 -- ---- Policies ------------------------------------------------------------
 -- Every owner_read / owner_insert / owner_update / owner_delete policy below
 -- resolves the caller's app-level user id via `auth.uid()` -> `users.auth_user_id`.
--- Tables still carrying `environment = 'sandbox'` in their USING clause are
--- the same legacy tables flagged above — see the note before their CREATE TABLE.
-
-create policy owner_read on public.audit_events for select to public
-  using (environment = 'sandbox' and actor_user_id = (select id from public.users where auth_user_id = auth.uid()));
 
 create policy owner_delete on public.beneficiaries for delete to public
   using (user_id = (select id from public.users where auth_user_id = auth.uid()));
@@ -395,25 +298,14 @@ create policy owner_insert on public.cards for insert to authenticated
 create policy owner_read on public.cards for select to authenticated
   using (user_id = (select id from public.users where auth_user_id = auth.uid()));
 
-create policy owner_read on public.deposits for select to public
-  using (environment = 'sandbox' and user_id = (select id from public.users where auth_user_id = auth.uid()));
-
 create policy kyc_documents_select_own on public.kyc_documents for select to authenticated
   using (auth_user_id = (select auth.uid()));
 
-create policy owner_read on public.kyc_status for select to public
-  using (environment = 'sandbox' and user_id = (select id from public.users where auth_user_id = auth.uid()));
+create policy owner_read on public.kyc_status for select to authenticated
+  using (user_id = (select id from public.users where auth_user_id = auth.uid()));
 
 create policy kyc_submissions_select_own on public.kyc_submissions for select to authenticated
   using (auth_user_id = (select auth.uid()));
-
-create policy owner_read on public.ledger_accounts for select to public
-  using (environment = 'sandbox' and user_id = (select id from public.users where auth_user_id = auth.uid()));
-
-create policy owner_read on public.ledger_entries for select to public
-  using (environment = 'sandbox' and transaction_id in (
-    select id from public.ledger_transactions where user_id = (select id from public.users where auth_user_id = auth.uid())
-  ));
 
 create policy owner_read on public.ledger_transactions for select to authenticated
   using (user_id = (select id from public.users where auth_user_id = auth.uid()));
@@ -440,12 +332,6 @@ create policy owner_update on public.profiles for update to public
   using (user_id = (select id from public.users where auth_user_id = auth.uid()))
   with check (user_id = (select id from public.users where auth_user_id = auth.uid()));
 
-create policy owner_read on public.risk_events for select to public
-  using (environment = 'sandbox' and user_id = (select id from public.users where auth_user_id = auth.uid()));
-
-create policy owner_read on public.transfers for select to public
-  using (environment = 'sandbox' and user_id = (select id from public.users where auth_user_id = auth.uid()));
-
 create policy owner_read on public.users for select to authenticated
   using (auth_user_id = auth.uid());
 create policy owner_update on public.users for update to public
@@ -455,9 +341,6 @@ create policy owner_update on public.users for update to public
 create policy owner_read on public.wallets for select to authenticated
   using (user_id = (select id from public.users where auth_user_id = auth.uid()));
 
-create policy owner_read on public.withdrawals for select to public
-  using (environment = 'sandbox' and user_id = (select id from public.users where auth_user_id = auth.uid()));
-
 -- ============================================================================
 -- Functions
 -- ============================================================================
@@ -466,6 +349,11 @@ create policy owner_read on public.withdrawals for select to public
 -- references against users/profiles/wallets/cards were removed — those
 -- columns no longer exist on those tables). See the handoff conversation for
 -- the original, broken versions if you need the history.
+--
+-- sync_kyc_status was corrected again separately: its `environment = 'sandbox'`
+-- references against kyc_status were removed as part of the production
+-- handoff cleanup (kyc_status/kyc_submissions no longer carry that column —
+-- see the "KYC document upload flow" section above).
 
 create or replace function public.hallmark_currency_for_country(country text)
  returns text
@@ -641,7 +529,7 @@ begin
 
   select ks.status into v_current
   from public.kyc_status ks
-  where ks.user_id = v_user_id and ks.environment = 'sandbox'
+  where ks.user_id = v_user_id
   limit 1;
 
   -- Never move a verified customer backwards
@@ -658,13 +546,13 @@ begin
           provider_reference = new.id::text,
           submitted_at = new.submitted_at,
           reviewed_at = new.reviewed_at
-      where user_id = v_user_id and environment = 'sandbox';
+      where user_id = v_user_id;
 
       if not found then
         insert into public.kyc_status
-          (user_id, status, provider, provider_reference, submitted_at, reviewed_at, environment)
+          (user_id, status, provider, provider_reference, submitted_at, reviewed_at)
         values
-          (v_user_id, v_try, 'manual_review', new.id::text, new.submitted_at, new.reviewed_at, 'sandbox');
+          (v_user_id, v_try, 'manual_review', new.id::text, new.submitted_at, new.reviewed_at);
       end if;
       exit;
     exception when check_violation then
