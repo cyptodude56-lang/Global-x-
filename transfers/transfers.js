@@ -7,9 +7,10 @@
 // of a modal, with a real (filtered) transaction history alongside it:
 //   - "Between my accounts": moves money checking <-> savings
 //   - "To a saved payee": pays one of the customer's real beneficiaries
-// Like every other interactive action in this project, these mutate an
-// in-memory copy only — nothing is written back to Supabase. See
-// README.md ("Why actions still don't write back to the database").
+// Like every other interactive action in this project, these post through
+// the atomic post_wallet_transaction / post_internal_transfer RPCs, so
+// balances and history are real and persist. See README.md ("Data &
+// persistence").
 // ---------------------------------------------------------------------------
 
 let CURRENT_USER_ID = null;

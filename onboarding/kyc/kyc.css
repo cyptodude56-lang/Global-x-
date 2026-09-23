@@ -220,7 +220,7 @@
 
 .kyc-mobile-progress { display: none; }
 
-.kyc-sandbox {
+.kyc-notice {
   display: flex;
   gap: 10px;
   align-items: flex-start;
@@ -232,7 +232,7 @@
   line-height: 1.5;
   color: #B7C0D1;
 }
-.kyc-sandbox svg { flex: none; width: 16px; height: 16px; margin-top: 1px; color: var(--k-blue-soft); }
+.kyc-notice svg { flex: none; width: 16px; height: 16px; margin-top: 1px; color: var(--k-blue-soft); }
 
 /* ---------- Main panel ---------- */
 
@@ -707,7 +707,7 @@
   .kyc-mobile-progress span.is-done { background: var(--k-blue-soft); }
   .kyc-mobile-progress span.is-active { background: #fff; }
 
-  .kyc-sandbox { margin-top: 16px; padding: 10px 12px; font-size: 0.76rem; }
+  .kyc-notice { margin-top: 16px; padding: 10px 12px; font-size: 0.76rem; }
   .kyc-main-inner { min-height: 0; padding: 28px 20px 32px; }
   .kyc-topbar { margin-bottom: 24px; }
   .kyc-step-title { font-size: 1.5rem; }

@@ -1,10 +1,10 @@
 // ---------------------------------------------------------------------------
 // Hallmark — Settings page.
 //
-// Unlike most interactive actions in this project (which only mutate local
-// state — see README's "Why actions still don't write back"), a settings
-// page whose whole point is persisting preferences would defeat itself if
-// nothing actually saved. So this page is deliberately split into two
+// A settings page whose whole point is persisting preferences would defeat
+// itself if nothing actually saved — and, like every other interactive
+// action in this project now, it does (see README's "Data &
+// persistence"). So this page is deliberately split into two
 // honest categories:
 //   - Real, persisted, and tested: profile fields, email (via the real
 //     Supabase Auth updateUser call), and notification preferences — all

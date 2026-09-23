@@ -9,9 +9,10 @@
 // a UI-level check anymore — the anon key genuinely cannot read another
 // customer's rows without that customer's own session. See README.md.
 //
-// Interactive actions (Add money / Send / Transfer / Withdraw) still only
-// mutate an in-memory copy for this browser tab; nothing is written back
-// to Supabase.
+// Interactive actions (Add money / Send / Transfer / Withdraw) post
+// through the post_wallet_transaction / post_internal_transfer RPCs (see
+// README.md "Data & persistence"), so balances and history are real and
+// survive a reload — not just an in-memory copy for this browser tab.
 // ---------------------------------------------------------------------------
 
 let CURRENT_USER_ID = null;

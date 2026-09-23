@@ -7,8 +7,10 @@ Postgres database instead of being hardcoded in the page. There is still no
 custom backend server: the browser talks to Supabase directly using its
 public (anon) key.
 
-This replaces the earlier hardcoded-data version. Everything is still
-labeled "Demo / sandbox" — no real customers, money, or cards anywhere.
+This replaces the earlier hardcoded-data version. The customers are
+fabricated seed data — no real people, money, or cards anywhere — but
+every action, including balance changes, writes to and persists in the
+real database, the same as production code would.
 
 ## What's in here
 
@@ -38,27 +40,28 @@ labeled "Demo / sandbox" — no real customers, money, or cards anywhere.
 That's it — open `index.html` locally, or deploy to GitHub Pages exactly as
 before (create a repo, push these files, turn on Pages in Settings).
 
-## Why actions don't write back to the database
+## Data & persistence
 
-Add money / Send / Transfer / Withdraw still only update an in-memory copy
-in the browser for that visit — refreshing the page resets everything back
-to whatever's in Supabase. They deliberately do **not** write to the real
-tables. Two reasons:
+Every customer-facing action — Add money, Send, Transfer, Withdraw, both
+Payments tabs, card issuance, loan applications — writes to the real
+Supabase tables and persists across reload. There's still no custom
+backend server; the browser calls Supabase directly, same as before.
 
-1. **There's no login yet.** You mentioned logins are coming later. Until a
-   visitor is actually authenticated as a specific customer, there's no way
-   to know who's "supposed" to be allowed to touch which rows.
-2. **This is a public, static site with a public key.** Anyone who opens
-   GitHub Pages can see the anon key in the page source. `schema.sql` locks
-   that key to **read-only** access (Row Level Security only grants
-   `SELECT`, and only on rows tagged `environment = 'sandbox'`) specifically
-   so a visitor poking at the API directly can't overwrite or corrupt the
-   shared demo data for everyone else viewing it.
+Balance changes specifically go through two Postgres functions,
+`post_wallet_transaction` and `post_internal_transfer` (`security definer`,
+called via `sb.rpc(...)`), which update a wallet's balance and insert the
+matching `ledger_transactions` row as a single atomic operation — so a
+transfer between two of your own accounts either posts both legs or
+neither. That's also why the client only ever needs read access to
+`wallets` and `ledger_transactions`: RLS on those tables grants `SELECT`
+only, and the functions do the actual writing themselves after
+independently verifying the wallet belongs to the calling signed-in user.
 
-Once real logins exist, the natural next step is: add RLS policies scoped
-to `auth.uid()` (so each customer can only read/write their own rows), then
-point the app's Add money / Send / Transfer / Withdraw handlers at real
-`insert`/`update` calls instead of local state.
+Access control is scoped to `auth.uid()` throughout (see the `owner_read` /
+`owner_insert` / etc. policies on each table) — a signed-in customer can
+only ever read or act on their own rows. There's no environment/sandbox
+tagging left in the schema; this is the real access-control layer, not a
+placeholder for one.
 
 ## Notes on the data model
 

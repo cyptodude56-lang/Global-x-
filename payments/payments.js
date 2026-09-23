@@ -11,7 +11,7 @@
 //     freeze/reveal logic as the dashboard, plus the real wallet a card
 //     is linked to (cards.wallet_id) instead of the reference's invented
 //     "credit limit" — Hallmark's cards are debit cards, not credit.
-// Same in-memory-only mutation policy as everywhere else in this project.
+// Same real, persisted posting (via post_wallet_transaction) as everywhere else in this project.
 // ---------------------------------------------------------------------------
 
 let CURRENT_USER_ID = null;
