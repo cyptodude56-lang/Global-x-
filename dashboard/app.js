@@ -191,10 +191,10 @@ async function loadData() {
     return;
   }
 
-  const filters = (q) => q.eq("environment", "sandbox").eq("user_id", CURRENT_USER_ID);
+  const filters = (q) => q.eq("user_id", CURRENT_USER_ID);
 
   const [usersRes, profilesRes, walletsRes, cardsRes, beneficiariesRes, txRes, notifRes, profileCardsRes] = await Promise.all([
-    sb.from("users").select("*").eq("environment", "sandbox").eq("id", CURRENT_USER_ID),
+    sb.from("users").select("*").eq("id", CURRENT_USER_ID),
     filters(sb.from("profiles").select("*")),
     filters(sb.from("wallets").select("*")),
     filters(sb.from("cards").select("*")),
@@ -947,7 +947,6 @@ function wireForm(kind) {
               bank_name: "Mock Partner Bank",
               account_number: newAccount,
               routing_number: newRouting,
-              environment: "sandbox",
             })
             .select()
             .single();
@@ -1131,7 +1130,6 @@ async function init() {
       card_holder_name: `${ACCOUNT.firstName} ${ACCOUNT.lastName}`,
       status: "active",
       is_virtual: false,
-      environment: "sandbox",
     });
 
     btn.disabled = false;

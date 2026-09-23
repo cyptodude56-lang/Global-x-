@@ -14,7 +14,7 @@
 // migration, run once in Supabase's SQL editor, same convention as every
 // other schema change in this project). Random 3-digit value, generated
 // here at issuance and backed by a DB default for any older card rows.
-// Still entirely fake, sandbox-only data — masked by default, same as
+// Still entirely fake, demo-only data — masked by default, same as
 // everything else sensitive-looking here.
 // ---------------------------------------------------------------------------
 
@@ -123,9 +123,9 @@ let allDetailsVisible = false;
 let selectedRequestType = "virtual";
 
 async function loadData() {
-  const filters = (q) => q.eq("environment", "sandbox").eq("user_id", CURRENT_USER_ID);
+  const filters = (q) => q.eq("user_id", CURRENT_USER_ID);
   const [usersRes, profilesRes, cardsRes, notifRes] = await Promise.all([
-    sb.from("users").select("*").eq("environment", "sandbox").eq("id", CURRENT_USER_ID),
+    sb.from("users").select("*").eq("id", CURRENT_USER_ID),
     filters(sb.from("profiles").select("*")),
     filters(sb.from("cards").select("*")),
     filters(sb.from("notifications").select("*")),
@@ -314,7 +314,6 @@ async function issueCard(cardType) {
       cvv: randomDigits(3),
       status: isVirtual ? "active" : "pending",
       is_virtual: isVirtual,
-      environment: "sandbox",
     })
     .select()
     .single();

@@ -94,7 +94,7 @@ function showToast(msg) {
 
 async function createNotification(type, message) {
   const { error } = await sb.from("notifications").insert({
-    user_id: CURRENT_USER_ID, type, message, is_read: false, environment: "sandbox",
+    user_id: CURRENT_USER_ID, type, message, is_read: false,
   });
   if (error) console.warn(`Couldn't create ${type} notification (action still proceeds):`, error);
 }
@@ -213,10 +213,10 @@ let ACCOUNT = null;
 let LIMIT_INFO = null;
 
 async function loadData() {
-  const filters = (q) => q.eq("environment", "sandbox").eq("user_id", CURRENT_USER_ID);
+  const filters = (q) => q.eq("user_id", CURRENT_USER_ID);
 
   const [usersRes, profilesRes, walletsRes, cardsRes, txRes, notifRes, loansRes] = await Promise.all([
-    sb.from("users").select("*").eq("environment", "sandbox").eq("id", CURRENT_USER_ID),
+    sb.from("users").select("*").eq("id", CURRENT_USER_ID),
     filters(sb.from("profiles").select("*")),
     filters(sb.from("wallets").select("*")),
     filters(sb.from("cards").select("*")),
@@ -396,7 +396,6 @@ async function submitLoanApplication(e) {
     .from("loans")
     .insert({
       user_id: CURRENT_USER_ID,
-      environment: "sandbox",
       loan_type: type,
       amount,
       currency: cur,

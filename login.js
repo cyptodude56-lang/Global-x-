@@ -290,7 +290,6 @@ async function recordLoginNotification(authUserId) {
       type: "security",
       message: "You signed in to Hallmark.",
       is_read: false,
-      environment: "sandbox",
     });
   } catch (err) {
     console.warn("Couldn't record login notification (login still proceeds):", err);

@@ -4,7 +4,7 @@
 // Three tabs, each grounded in real data rather than the reference's
 // invented "type in anyone's account/routing number" flow:
 //   - Within the bank: pay a saved beneficiary whose bank_name is
-//     'Sandbox Clearing House' (the seed data's own stand-in for Hallmark)
+//     'Hallmark Clearing House' (the seed data's own stand-in for Hallmark)
 //   - Other banks: pay a saved beneficiary whose bank_name is
 //     'Mock Partner Bank'
 //   - Cards: the customer's real card(s), reusing the exact same
@@ -145,10 +145,10 @@ function initials(acc) { return ((acc.firstName[0] || "") + (acc.lastName[0] || 
 function newTxId() { txCounter += 1; return "local-" + txCounter; }
 
 async function loadData() {
-  const filters = (q) => q.eq("environment", "sandbox").eq("user_id", CURRENT_USER_ID);
+  const filters = (q) => q.eq("user_id", CURRENT_USER_ID);
 
   const [usersRes, profilesRes, walletsRes, beneficiariesRes, cardsRes, txRes, notifRes] = await Promise.all([
-    sb.from("users").select("*").eq("environment", "sandbox").eq("id", CURRENT_USER_ID),
+    sb.from("users").select("*").eq("id", CURRENT_USER_ID),
     filters(sb.from("profiles").select("*")),
     filters(sb.from("wallets").select("*")),
     filters(sb.from("beneficiaries").select("*")),
@@ -229,7 +229,7 @@ function renderAll() {
   el("user-tier").textContent = ACCOUNT.tier;
 
   renderNotifications();
-  renderPayForm("wb", "Sandbox Clearing House");
+  renderPayForm("wb", "Hallmark Clearing House");
   renderPayForm("ob", "Mock Partner Bank");
   defaultAccountApplied = true;
   renderPaymentsHistory();
@@ -371,7 +371,7 @@ async function removePayee(id) {
   }
   ACCOUNT.beneficiaries = ACCOUNT.beneficiaries.filter((b) => b.id !== id);
   renderPayeesList();
-  renderPayForm("wb", "Sandbox Clearing House");
+  renderPayForm("wb", "Hallmark Clearing House");
   renderPayForm("ob", "Mock Partner Bank");
   showToast("Payee removed");
 }
@@ -444,7 +444,7 @@ function wireAddPayeeForm() {
     el("np-error").hidden = true;
     const account = el("np-account").value.trim();
     const routing = el("np-routing").value.trim();
-    const bankName = addPayeeBankType === "within" ? "Sandbox Clearing House" : "Mock Partner Bank";
+    const bankName = addPayeeBankType === "within" ? "Hallmark Clearing House" : "Mock Partner Bank";
     let name;
 
     if (addPayeeBankType === "within") {
@@ -481,7 +481,6 @@ function wireAddPayeeForm() {
         bank_name: bankName,
         account_number: account,
         routing_number: addPayeeBankType === "other" ? routing : null,
-        environment: "sandbox",
       })
       .select()
       .single();
@@ -502,7 +501,7 @@ function wireAddPayeeForm() {
     addPayeeLookupName = null;
     showToast("Payee added");
     renderPayeesList();
-    renderPayForm("wb", "Sandbox Clearing House");
+    renderPayForm("wb", "Hallmark Clearing House");
     renderPayForm("ob", "Mock Partner Bank");
   });
 }
@@ -610,7 +609,7 @@ function renderCardHistory() {
 async function createNotification(type, message) {
   if (type === "transaction" && !NOTIFY_TRANSACTIONS) return;
   const { error } = await sb.from("notifications").insert({
-    user_id: CURRENT_USER_ID, type, message, is_read: false, environment: "sandbox",
+    user_id: CURRENT_USER_ID, type, message, is_read: false,
   });
   if (error) console.warn(`Couldn't create ${type} notification (action still proceeds):`, error);
 }
@@ -696,7 +695,6 @@ function wirePayForm(prefix, formId) {
             bank_name: bankName,
             account_number: recipientAccountNumber,
             routing_number: recipientRoutingNumber,
-            environment: "sandbox",
           })
           .select()
           .single();
@@ -812,7 +810,7 @@ async function init() {
 
   wirePayForm("wb", "within-form");
   wirePayForm("ob", "other-form");
-  wireRecipientToggle("wb", "Sandbox Clearing House");
+  wireRecipientToggle("wb", "Hallmark Clearing House");
   wireRecipientToggle("ob", "Mock Partner Bank");
   wireWbLookup();
   wireAddPayeeForm();

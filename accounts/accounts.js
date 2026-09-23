@@ -133,10 +133,10 @@ async function loadFxTicker() {
 let ACCOUNT = null;
 
 async function loadData() {
-  const filters = (q) => q.eq("environment", "sandbox").eq("user_id", CURRENT_USER_ID);
+  const filters = (q) => q.eq("user_id", CURRENT_USER_ID);
 
   const [usersRes, profilesRes, walletsRes, notifRes] = await Promise.all([
-    sb.from("users").select("*").eq("environment", "sandbox").eq("id", CURRENT_USER_ID),
+    sb.from("users").select("*").eq("id", CURRENT_USER_ID),
     filters(sb.from("profiles").select("*")),
     filters(sb.from("wallets").select("*")),
     filters(sb.from("notifications").select("*")),

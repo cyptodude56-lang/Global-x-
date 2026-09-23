@@ -141,9 +141,9 @@ let notificationsDirtyTracker = null;
 let preferencesDirtyTracker = null;
 
 async function loadData() {
-  const filters = (q) => q.eq("environment", "sandbox").eq("user_id", CURRENT_USER_ID);
+  const filters = (q) => q.eq("user_id", CURRENT_USER_ID);
   const [usersRes, profilesRes, notifRes] = await Promise.all([
-    sb.from("users").select("*").eq("environment", "sandbox").eq("id", CURRENT_USER_ID),
+    sb.from("users").select("*").eq("id", CURRENT_USER_ID),
     filters(sb.from("profiles").select("*")),
     filters(sb.from("notifications").select("*")),
   ]);
@@ -288,7 +288,7 @@ function renderDisplayPrefs() {
 async function createNotification(type, message) {
   if (type === "security" && ACCOUNT.preferences.notifSecurity === false) return;
   const { error } = await sb.from("notifications").insert({
-    user_id: ACCOUNT.id, type, message, is_read: false, environment: "sandbox",
+    user_id: ACCOUNT.id, type, message, is_read: false,
   });
   if (error) console.warn(`Couldn't create ${type} notification (change still saved):`, error);
 }
