@@ -19,8 +19,8 @@ const el = (id) => document.getElementById(id);
 
 async function resolveSession() {
   CURRENT_USER_ID = await window.hallmarkResolveAccount({
-    loginPath: "../index.html",
-    incompleteProfilePath: "../onboarding/complete-profile.html",
+    loginPath: "../",
+    incompleteProfilePath: "../onboarding/complete-profile/",
     errorTarget: ".dashboard-content",
   });
   return CURRENT_USER_ID !== null;
@@ -334,7 +334,7 @@ async function init() {
 
   el("btn-logout").addEventListener("click", async () => {
     await sb.auth.signOut();
-    window.location.href = "../index.html";
+    window.location.href = "../";
   });
 
   el("btn-bell").addEventListener("click", (e) => {
@@ -380,31 +380,31 @@ async function init() {
   document.querySelectorAll(".nav-item[data-nav]").forEach((btn) => {
     if (btn.dataset.nav === "accounts") return; // already here
     if (btn.dataset.nav === "dashboard") {
-      btn.addEventListener("click", () => (window.location.href = "../dashboard/dashboard.html"));
+      btn.addEventListener("click", () => (window.location.href = "../dashboard/"));
       return;
     }
     if (btn.dataset.nav === "transfers") {
-      btn.addEventListener("click", () => (window.location.href = "../transfers/transfers.html"));
+      btn.addEventListener("click", () => (window.location.href = "../transfers/"));
       return;
     }
     if (btn.dataset.nav === "payments") {
-      btn.addEventListener("click", () => (window.location.href = "../payments/payments.html"));
+      btn.addEventListener("click", () => (window.location.href = "../payments/"));
       return;
     }
     if (btn.dataset.nav === "cards") {
-      btn.addEventListener("click", () => (window.location.href = "../cards/cards.html"));
+      btn.addEventListener("click", () => (window.location.href = "../cards/"));
       return;
     }
     if (btn.dataset.nav === "loans") {
-      btn.addEventListener("click", () => (window.location.href = "../loans/loans.html"));
+      btn.addEventListener("click", () => (window.location.href = "../loans/"));
       return;
     }
 
     if (btn.dataset.nav === "statements") { 
-      btn.addEventListener("click", () => (window.location.href = "../statements/statements.html")); 
+      btn.addEventListener("click", () => (window.location.href = "../statements/")); 
       return; }
     if (btn.dataset.nav === "settings") {
-      btn.addEventListener("click", () => (window.location.href = "../settings/settings.html"));
+      btn.addEventListener("click", () => (window.location.href = "../settings/"));
       return;
     }
     btn.addEventListener("click", () => {

@@ -175,7 +175,7 @@ function validateFile(file, photoOnly) {
 // ---------------------------------------------------------------------------
 
 async function gate() {
-  const session = await window.hallmarkRequireSession("../index.html");
+  const session = await window.hallmarkRequireSession("../../");
   if (!session) return false;
   state.userId = session.user.id;
   const meta = (session.user && session.user.user_metadata) || {};
@@ -736,7 +736,7 @@ async function init() {
     ok = await gate();
   } catch (err) {
     console.error("Session check failed:", err);
-    window.location.href = "../index.html";
+    window.location.href = "../../";
   }
   if (!ok) return;
   buildSelfieSlot();

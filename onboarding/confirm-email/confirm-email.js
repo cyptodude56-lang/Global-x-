@@ -25,7 +25,7 @@ async function init() {
   if (!session) {
     el("confirm-status").innerHTML = `
       <p class="helper-text">This link may have expired or already been used.</p>
-      <p class="helper-text"><a href="../index.html" style="color:var(--gold-soft);">Back to login</a></p>
+      <p class="helper-text"><a href="../../" style="color:var(--gold-soft);">Back to login</a></p>
     `;
     return;
   }
@@ -41,7 +41,7 @@ async function init() {
   `;
 
   setTimeout(() => {
-    window.location.href = "complete-profile.html";
+    window.location.href = "../complete-profile/";
   }, 5000);
 }
 

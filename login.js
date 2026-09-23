@@ -125,7 +125,7 @@ async function init() {
     data: { session },
   } = await sb.auth.getSession();
   if (session) {
-    window.location.href = "dashboard/dashboard.html";
+    window.location.href = "dashboard/";
   }
 }
 
@@ -187,7 +187,7 @@ el("signup-form").addEventListener("submit", async (e) => {
     email: el("signup-email").value.trim(),
     options: {
       shouldCreateUser: true,
-      emailRedirectTo: new URL("onboarding/confirm-email.html", window.location.href).toString(),
+      emailRedirectTo: new URL("onboarding/confirm-email/", window.location.href).toString(),
       data: {
         first_name: el("signup-first-name").value.trim(),
         last_name: el("signup-last-name").value.trim(),
@@ -261,7 +261,7 @@ el("verify-code-form").addEventListener("submit", async (e) => {
 
   stopCodeTimer();
   await recordLoginNotification(data.session.user.id);
-  window.location.href = "dashboard/dashboard.html";
+  window.location.href = "dashboard/";
 });
 
 async function recordLoginNotification(authUserId) {

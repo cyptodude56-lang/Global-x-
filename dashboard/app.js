@@ -33,8 +33,8 @@ const el = (id) => document.getElementById(id);
 // (and redirects) if there's no session, or no customer row linked to it.
 async function resolveSession() {
   CURRENT_USER_ID = await window.hallmarkResolveAccount({
-    loginPath: "../index.html",
-    incompleteProfilePath: "../onboarding/complete-profile.html",
+    loginPath: "../",
+    incompleteProfilePath: "../onboarding/complete-profile/",
     errorTarget: ".dashboard-content",
   });
   return CURRENT_USER_ID !== null;
@@ -1005,7 +1005,7 @@ async function init() {
 
   el("btn-logout").addEventListener("click", async () => {
     await sb.auth.signOut();
-    window.location.href = "../index.html";
+    window.location.href = "../";
   });
 
   el("modal-close").addEventListener("click", closeModal);
@@ -1027,7 +1027,7 @@ async function init() {
   });
 
   el("btn-goto-cards").addEventListener("click", () => {
-    window.location.href = "../cards/cards.html";
+    window.location.href = "../cards/";
   });
 
   el("btn-freeze").addEventListener("click", () => {
@@ -1150,31 +1150,31 @@ async function init() {
       return;
     }
     if (btn.dataset.nav === "accounts") {
-      btn.addEventListener("click", () => (window.location.href = "../accounts/accounts.html"));
+      btn.addEventListener("click", () => (window.location.href = "../accounts/"));
       return;
     }
     if (btn.dataset.nav === "transfers") {
-      btn.addEventListener("click", () => (window.location.href = "../transfers/transfers.html"));
+      btn.addEventListener("click", () => (window.location.href = "../transfers/"));
       return;
     }
     if (btn.dataset.nav === "payments") {
-      btn.addEventListener("click", () => (window.location.href = "../payments/payments.html"));
+      btn.addEventListener("click", () => (window.location.href = "../payments/"));
       return;
     }
     if (btn.dataset.nav === "cards") {
-      btn.addEventListener("click", () => (window.location.href = "../cards/cards.html"));
+      btn.addEventListener("click", () => (window.location.href = "../cards/"));
       return;
     }
     if (btn.dataset.nav === "loans") {
-      btn.addEventListener("click", () => (window.location.href = "../loans/loans.html"));
+      btn.addEventListener("click", () => (window.location.href = "../loans/"));
       return;
     }
     if (btn.dataset.nav === "statements") { 
-      btn.addEventListener("click", () => (window.location.href = "../statements/statements.html")); 
+      btn.addEventListener("click", () => (window.location.href = "../statements/")); 
       return; }
 
     if (btn.dataset.nav === "settings") {
-      btn.addEventListener("click", () => (window.location.href = "../settings/settings.html"));
+      btn.addEventListener("click", () => (window.location.href = "../settings/"));
       return;
     }
     btn.addEventListener("click", () => {
@@ -1188,7 +1188,7 @@ async function init() {
   });
 
   el("btn-explore").addEventListener("click", () => showToast("Explore Opportunities coming soon in a later phase"));
-  el("btn-quick-loan").addEventListener("click", () => (window.location.href = "../loans/loans.html"));
+  el("btn-quick-loan").addEventListener("click", () => (window.location.href = "../loans/"));
 
   const ok = await resolveSession();
   if (!ok) return;

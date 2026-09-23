@@ -3,24 +3,24 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Hallmark Financial Bank — Statements</title>
+<title>Hallmark Financial Bank — Cards</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link
   href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap"
   rel="stylesheet"
 />
+<link rel="stylesheet" href="../assets/css/styles.css" />
+<link rel="stylesheet" href="../assets/css/motion.css" />
 <script src="../assets/js/motion.js"></script>
 
-<link rel="icon" type="image/svg+xml" href="/Global-x-/assets/favicon-CjkZmihN.svg" />
+<link rel="icon" type="image/svg+xml" href="../favicon.svg" />
 <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32.png" />
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16.png" />
 <link rel="shortcut icon" href="../favicon.ico" />
 <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png" />
-<link rel="manifest" href="/Global-x-/assets/site-DGFW9KNJ.webmanifest" />
+<link rel="manifest" href="../site.webmanifest" />
 <meta name="theme-color" content="#10151F" />
-  <link rel="stylesheet" crossorigin href="/Global-x-/assets/styles-CbsWGwjK.css">
-  <link rel="stylesheet" crossorigin href="/Global-x-/assets/motion-DoHGPwGT.css">
 </head>
 <body>
 
@@ -37,7 +37,7 @@
         <span data-icon="close"></span>
       </button>
       <div class="sidebar-logo">
-        <img src="/Global-x-/assets/icon-512-nV_-sgtN.png" alt="" />
+        <img src="../icon-512.png" alt="" />
         <div class="sidebar-logo-text">
           <p class="sidebar-logo-name">Hallmark</p>
           <p class="sidebar-logo-sub">FINANCIAL BANK</p>
@@ -49,11 +49,9 @@
         <button class="nav-item" data-nav="accounts" type="button"><span class="nav-icon" data-icon="accounts"></span><span>Accounts</span></button>
         <button class="nav-item" data-nav="transfers" type="button"><span class="nav-icon" data-icon="transfers"></span><span>Transfers</span></button>
         <button class="nav-item" data-nav="payments" type="button"><span class="nav-icon" data-icon="payments"></span><span>Payments</span></button>
-        <button class="nav-item" data-nav="cards" type="button"><span class="nav-icon" data-icon="cards"></span><span>Cards</span></button>
+        <button class="nav-item active" data-nav="cards" type="button"><span class="nav-icon" data-icon="cards"></span><span>Cards</span></button>
         <button class="nav-item" data-nav="loans" type="button"><span class="nav-icon" data-icon="loans"></span><span>Loans</span></button>
-        <button class="nav-item" data-nav="investments" type="button"><span class="nav-icon" data-icon="investments"></span><span>Investments</span></button>
-        <button class="nav-item" data-nav="wealth" type="button"><span class="nav-icon" data-icon="wealth"></span><span>Wealth Management</span></button>
-        <button class="nav-item active" data-nav="statements" type="button"><span class="nav-icon" data-icon="statements"></span><span>Statements</span></button>
+        <button class="nav-item" data-nav="statements" type="button"><span class="nav-icon" data-icon="statements"></span><span>Statements</span></button>
         <button class="nav-item" data-nav="settings" type="button"><span class="nav-icon" data-icon="settings"></span><span>Settings</span></button>
       </nav>
 
@@ -96,10 +94,10 @@
               <span class="user-menu-chevron" data-icon="chevron"></span>
             </button>
             <div class="user-dropdown" id="user-dropdown" hidden>
-              <a class="user-dropdown-item" href="../settings/settings.html">
+              <a class="user-dropdown-item" href="../settings/">
                 <span data-icon="accounts"></span> Profile
               </a>
-              <a class="user-dropdown-item" href="../settings/settings.html">
+              <a class="user-dropdown-item" href="../settings/">
                 <span data-icon="settings"></span> Settings
               </a>
               <div class="user-dropdown-divider"></div>
@@ -114,74 +112,45 @@
       <main class="dashboard-content">
         <div class="page-header">
           <div>
-            <h1 class="page-title">Statements</h1>
-            <p class="page-subtitle">Review and download your transaction history by account and period.</p>
+            <h1 class="page-title">My Cards</h1>
+            <p class="page-subtitle">Manage your physical and virtual cards.</p>
+          </div>
+          <div class="header-actions">
+            <button class="ghost-btn" id="btn-toggle-all-details" type="button" style="flex:none;">Show all details</button>
+            <button class="submit-btn" id="btn-request-card" type="button" style="width:auto;">Request new card</button>
           </div>
         </div>
 
-        <section class="statement-card" id="statement-card">
-          <div class="statement-card__header">
-            <div class="statement-card__title-row">
-              <span class="statement-card__title">Statement</span>
-              <span class="statement-card__badge" id="stmt-period-badge">—</span>
-            </div>
-            <div class="statement-card__actions">
-              <button type="button" id="btn-stmt-download" class="stmt-action-btn">
-                <span data-icon="download"></span> Download CSV
-              </button>
-              <button type="button" id="btn-stmt-print" class="stmt-action-btn">
-                <span data-icon="print"></span> Print
-              </button>
-            </div>
+        <div id="request-panel" class="request-panel" hidden>
+          <p class="side-panel-title">Request a new card</p>
+          <p class="helper-text">Virtual cards are ready instantly. Physical cards arrive in 5–7 business days.</p>
+          <div class="card-type-options">
+            <button class="type-option selected" data-type="virtual" type="button">
+              <span class="type-radio"></span>
+              <span class="type-info"><span class="type-name">Virtual card</span><span class="type-desc">Instant access — ideal for online payments and subscriptions.</span></span>
+            </button>
+            <button class="type-option" data-type="physical" type="button">
+              <span class="type-radio"></span>
+              <span class="type-info"><span class="type-name">Physical card</span><span class="type-desc">Delivered to your address — for ATM withdrawals and in-store payments.</span></span>
+            </button>
           </div>
+          <div class="request-actions">
+            <button class="ghost-btn" id="btn-cancel-request" type="button">Cancel</button>
+            <button class="submit-btn" id="btn-confirm-request" type="button" style="width:auto;">Request card</button>
+          </div>
+        </div>
 
-          <div class="statement-controls">
-            <div class="stmt-tabs" id="stmt-tabs">
-              <button class="stmt-tab active" data-type="all" type="button">All</button>
-              <button class="stmt-tab" data-type="income" type="button">Income</button>
-              <button class="stmt-tab" data-type="expenses" type="button">Expenses</button>
-              <button class="stmt-tab" data-type="transfers" type="button">Transfers</button>
-            </div>
-            <div class="stmt-selects">
-              <select id="stmt-account-select" aria-label="Account"></select>
-              <select id="stmt-month-select" aria-label="Period"></select>
-            </div>
-          </div>
+        <div class="section-header">
+          <p class="section-title">Physical cards</p>
+          <span class="filter-badge" id="physical-count"></span>
+        </div>
+        <div class="cards-grid" id="physical-cards-grid"></div>
 
-          <div class="stmt-table-wrap">
-            <table class="stmt-table" id="stmt-table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Description</th>
-                  <th>Category</th>
-                  <th>Account</th>
-                  <th style="text-align:right;">Amount</th>
-                </tr>
-              </thead>
-              <tbody id="stmt-table-body"></tbody>
-            </table>
-          </div>
-
-          <div class="stmt-footer">
-            <div class="stmt-footer-stat">
-              <span class="stmt-footer-label">Money in</span>
-              <span class="stmt-footer-value in" id="stmt-total-in"></span>
-            </div>
-            <div class="stmt-footer-stat">
-              <span class="stmt-footer-label">Money out</span>
-              <span class="stmt-footer-value out" id="stmt-total-out"></span>
-            </div>
-            <div class="stmt-footer-stat">
-              <span class="stmt-footer-label">Net for period</span>
-              <span class="stmt-footer-value" id="stmt-net"></span>
-            </div>
-            <div class="stmt-footer-stat">
-              <span class="stmt-footer-label">Current balance (today)</span>
-              <span class="stmt-footer-value" id="stmt-current-balance"></span>
-            </div>
-          </div>
-        </section>
+        <div class="section-header" style="margin-top:28px;">
+          <p class="section-title">Virtual cards</p>
+          <span class="filter-badge" id="virtual-count"></span>
+        </div>
+        <div class="cards-grid" id="virtual-cards-grid"></div>
       </main>
 
       <footer class="app-footer">
@@ -195,6 +164,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../assets/js/supabase-config.js"></script>
-  <script src="statements.js"></script>
+  <script src="../assets/js/auth-gate.js"></script>
+  <script src="cards.js"></script>
 </body>
 </html>

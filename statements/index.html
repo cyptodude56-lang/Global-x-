@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Hallmark Financial Bank — Transfers</title>
+<title>Hallmark Financial Bank — Statements</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link
@@ -47,11 +47,11 @@
       <nav class="sidebar-nav" id="sidebar-nav">
         <button class="nav-item" data-nav="dashboard" type="button"><span class="nav-icon" data-icon="dashboard"></span><span>Dashboard</span></button>
         <button class="nav-item" data-nav="accounts" type="button"><span class="nav-icon" data-icon="accounts"></span><span>Accounts</span></button>
-        <button class="nav-item active" data-nav="transfers" type="button"><span class="nav-icon" data-icon="transfers"></span><span>Transfers</span></button>
+        <button class="nav-item" data-nav="transfers" type="button"><span class="nav-icon" data-icon="transfers"></span><span>Transfers</span></button>
         <button class="nav-item" data-nav="payments" type="button"><span class="nav-icon" data-icon="payments"></span><span>Payments</span></button>
         <button class="nav-item" data-nav="cards" type="button"><span class="nav-icon" data-icon="cards"></span><span>Cards</span></button>
         <button class="nav-item" data-nav="loans" type="button"><span class="nav-icon" data-icon="loans"></span><span>Loans</span></button>
-        <button class="nav-item" data-nav="statements" type="button"><span class="nav-icon" data-icon="statements"></span><span>Statements</span></button>
+        <button class="nav-item active" data-nav="statements" type="button"><span class="nav-icon" data-icon="statements"></span><span>Statements</span></button>
         <button class="nav-item" data-nav="settings" type="button"><span class="nav-icon" data-icon="settings"></span><span>Settings</span></button>
       </nav>
 
@@ -94,10 +94,10 @@
               <span class="user-menu-chevron" data-icon="chevron"></span>
             </button>
             <div class="user-dropdown" id="user-dropdown" hidden>
-              <a class="user-dropdown-item" href="../settings/settings.html">
+              <a class="user-dropdown-item" href="../settings/">
                 <span data-icon="accounts"></span> Profile
               </a>
-              <a class="user-dropdown-item" href="../settings/settings.html">
+              <a class="user-dropdown-item" href="../settings/">
                 <span data-icon="settings"></span> Settings
               </a>
               <div class="user-dropdown-divider"></div>
@@ -112,55 +112,74 @@
       <main class="dashboard-content">
         <div class="page-header">
           <div>
-            <h1 class="page-title">Transfers</h1>
-            <p class="page-subtitle">Move money between your own accounts, or send to a saved payee.</p>
+            <h1 class="page-title">Statements</h1>
+            <p class="page-subtitle">Review and download your transaction history by account and period.</p>
           </div>
         </div>
 
-        <div class="transfers-grid">
-          <section class="side-panel transfer-form-panel">
-            <p class="side-panel-title">New transfer</p>
-
-            <div class="transfer-type-toggle">
-              <button class="transfer-type-btn active" id="type-internal" type="button">Between my accounts</button>
-              <button class="transfer-type-btn" id="type-payee" type="button">To a saved payee</button>
+        <section class="statement-card" id="statement-card">
+          <div class="statement-card__header">
+            <div class="statement-card__title-row">
+              <span class="statement-card__title">Statement</span>
+              <span class="statement-card__badge" id="stmt-period-badge">—</span>
             </div>
-
-            <form id="transfer-form">
-              <div class="field"><label for="tf-from">From account</label>
-                <select id="tf-from"></select>
-              </div>
-
-              <div class="field" id="tf-to-field"><label for="tf-to">To account</label>
-                <input id="tf-to" type="text" disabled />
-              </div>
-
-              <div class="field" id="tf-payee-field" hidden><label for="tf-payee">Payee</label>
-                <select id="tf-payee"></select>
-              </div>
-
-              <div class="field"><label for="tf-amount">Amount</label>
-                <input id="tf-amount" type="number" min="0.01" step="0.01" placeholder="0.00" required />
-              </div>
-
-              <div class="field" id="tf-memo-field" hidden><label for="tf-memo">Memo (optional)</label>
-                <input id="tf-memo" type="text" placeholder="e.g. Rent, Invoice #123" />
-              </div>
-
-              <p class="form-error" id="tf-error" hidden></p>
-              <button class="submit-btn" type="submit" id="tf-submit">Send transfer</button>
-              <p class="secure-note">Reviewed before sending &middot; Hallmark standard safeguards</p>
-            </form>
-          </section>
-
-          <section class="side-panel transfer-history-panel">
-            <div class="section-header">
-              <p class="section-title">Transfer History</p>
-              <span class="filter-badge">Last 30 days</span>
+            <div class="statement-card__actions">
+              <button type="button" id="btn-stmt-download" class="stmt-action-btn">
+                <span data-icon="download"></span> Download CSV
+              </button>
+              <button type="button" id="btn-stmt-print" class="stmt-action-btn">
+                <span data-icon="print"></span> Print
+              </button>
             </div>
-            <div class="tx-list" id="transfer-history-list"></div>
-          </section>
-        </div>
+          </div>
+
+          <div class="statement-controls">
+            <div class="stmt-tabs" id="stmt-tabs">
+              <button class="stmt-tab active" data-type="all" type="button">All</button>
+              <button class="stmt-tab" data-type="income" type="button">Income</button>
+              <button class="stmt-tab" data-type="expenses" type="button">Expenses</button>
+              <button class="stmt-tab" data-type="transfers" type="button">Transfers</button>
+            </div>
+            <div class="stmt-selects">
+              <select id="stmt-account-select" aria-label="Account"></select>
+              <select id="stmt-month-select" aria-label="Period"></select>
+            </div>
+          </div>
+
+          <div class="stmt-table-wrap">
+            <table class="stmt-table" id="stmt-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Description</th>
+                  <th>Category</th>
+                  <th>Account</th>
+                  <th style="text-align:right;">Amount</th>
+                </tr>
+              </thead>
+              <tbody id="stmt-table-body"></tbody>
+            </table>
+          </div>
+
+          <div class="stmt-footer">
+            <div class="stmt-footer-stat">
+              <span class="stmt-footer-label">Money in</span>
+              <span class="stmt-footer-value in" id="stmt-total-in"></span>
+            </div>
+            <div class="stmt-footer-stat">
+              <span class="stmt-footer-label">Money out</span>
+              <span class="stmt-footer-value out" id="stmt-total-out"></span>
+            </div>
+            <div class="stmt-footer-stat">
+              <span class="stmt-footer-label">Net for period</span>
+              <span class="stmt-footer-value" id="stmt-net"></span>
+            </div>
+            <div class="stmt-footer-stat">
+              <span class="stmt-footer-label">Current balance (today)</span>
+              <span class="stmt-footer-value" id="stmt-current-balance"></span>
+            </div>
+          </div>
+        </section>
       </main>
 
       <footer class="app-footer">
@@ -175,6 +194,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../assets/js/supabase-config.js"></script>
   <script src="../assets/js/auth-gate.js"></script>
-  <script src="transfers.js"></script>
+  <script src="statements.js"></script>
 </body>
 </html>

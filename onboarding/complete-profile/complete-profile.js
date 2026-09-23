@@ -32,7 +32,7 @@ async function init() {
     data: { session },
   } = await sb.auth.getSession();
   if (!session) {
-    window.location.href = "../index.html";
+    window.location.href = "../../";
     return;
   }
 
@@ -47,7 +47,7 @@ async function init() {
   // Already completed this step before (e.g. reloaded the page)? Skip ahead.
   const { data: existingWallets } = await sb.from("wallets").select("id").eq("user_id", userRow.id).limit(1);
   if (existingWallets && existingWallets.length > 0) {
-    window.location.href = "kyc.html";
+    window.location.href = "../kyc/";
   }
 }
 
@@ -93,7 +93,7 @@ el("profile-form").addEventListener("submit", async (e) => {
     return;
   }
 
-  window.location.href = "kyc.html";
+  window.location.href = "../kyc/";
 });
 
 init();

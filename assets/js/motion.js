@@ -30,7 +30,7 @@
   try {
     var ref = doc.referrer ? new URL(doc.referrer) : null;
     var fromApp = ref && ref.origin === location.origin &&
-      /\/(dashboard|accounts|cards|payments|transfers|statements|settings)\.html$/.test(ref.pathname);
+      /\/(dashboard|accounts|cards|payments|transfers|statements|settings|loans)\/?$/.test(ref.pathname);
     if (!fromApp) root.classList.add("m-intro");
   } catch (e) { /* referrer unreadable: treat as a first visit */ }
 
