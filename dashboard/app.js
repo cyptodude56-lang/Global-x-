@@ -460,11 +460,13 @@ function renderCardTabs() {
 function renderCard() {
   const cardEl = el("virtual-card");
   const c = ACCOUNT.cards[state.activeCardIndex];
+  const infoRow = el("card-info-row");
   if (!c) {
     cardEl.className = "debit-card-visual";
     cardEl.style.border = "2px dashed rgba(255,255,255,0.25)";
     cardEl.style.background = "transparent";
     cardEl.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted-invert);font-size:0.85rem;">No card yet</div>`;
+    if (infoRow) infoRow.innerHTML = "";
     el("btn-freeze").hidden = true;
     el("btn-reveal").hidden = true;
     el("btn-get-card").hidden = false;
@@ -476,26 +478,43 @@ function renderCard() {
   el("btn-freeze").hidden = false;
   el("btn-reveal").hidden = false;
 
+  // Same layout, fields and pending/frozen handling as cards.js's
+  // cardItemHtml() — this card and the ones on the Cards page should
+  // always look and behave identically.
+  const pending = c.status === "pending";
   const hiddenDisplay = `•••• •••• •••• ${lastFour(c.maskedPan)}`;
   const shownDisplay = c.fullPan ? formatPan(c.fullPan) : c.maskedPan;
-  const numberToShow = c.revealed ? shownDisplay : hiddenDisplay;
+  const numberToShow = c.revealed && !pending ? shownDisplay : hiddenDisplay;
+  const cvv = c.revealed && !pending ? (c.cvv || "•••") : "•••";
 
-  cardEl.className = "debit-card-visual" + (c.frozen ? " frozen" : "");
+  cardEl.className = "debit-card-visual" + (c.frozen ? " frozen" : "") + (pending ? " pending" : "");
   cardEl.innerHTML = `
     <div class="card-top">
       <span class="card-brand">Hallmark</span>
-      <span class="card-chip"></span>
+      ${pending ? '<span class="card-badge">Arriving soon</span>' : c.frozen ? '<span class="frozen-tag">Frozen</span>' : ""}
     </div>
     <div class="card-number">${numberToShow}</div>
     <div class="card-bottom">
       <span>${c.holder}</span>
-      <span class="card-network-mark">${(c.network || "").toUpperCase()}${c.isVirtual ? " · Virtual" : " Platinum"}</span>
+      <span class="card-expiry"><span class="card-expiry-label">VALID THRU</span>${c.expiry || "--/--"}</span>
+      <span class="card-network-mark">${(c.network || "").toUpperCase()}${c.isVirtual ? " · Virtual" : ""}</span>
     </div>
-    ${c.frozen ? '<span class="frozen-tag">Frozen</span>' : ""}
   `;
-  el("btn-freeze").textContent = c.frozen ? "Unfreeze card" : "Freeze card";
 
-  if (!c.fullPan) {
+  if (infoRow) {
+    infoRow.innerHTML = `
+      <div class="card-info-item"><p class="card-info-label">CVV</p><p class="card-info-value">${cvv}</p></div>
+      <div class="card-info-item"><p class="card-info-label">Status</p><p class="card-info-value" style="color:${pending ? "var(--gold-dark)" : c.frozen ? "var(--negative)" : "var(--positive)"};font-size:0.85rem;">${pending ? "Pending" : c.frozen ? "Frozen" : "Active"}</p></div>
+    `;
+  }
+
+  el("btn-freeze").textContent = c.frozen ? "Unfreeze card" : "Freeze card";
+  el("btn-freeze").disabled = pending;
+
+  if (pending) {
+    el("btn-reveal").disabled = true;
+    el("btn-reveal").textContent = "Arriving soon";
+  } else if (!c.fullPan) {
     el("btn-reveal").disabled = true;
     el("btn-reveal").textContent = "Full number not loaded";
   } else {

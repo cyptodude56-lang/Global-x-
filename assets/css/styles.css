@@ -1098,7 +1098,7 @@ a { color: inherit; }
 }
 
 .card-item-visual { min-height: 160px; margin-bottom: 0; }
-.card-item-visual.pending { background: linear-gradient(135deg, #5b6472 0%, #3a414c 100%); }
+.card-item-visual.pending, .debit-card-visual.pending { background: linear-gradient(135deg, #5b6472 0%, #3a414c 100%); }
 
 .card-badge {
   font-size: 0.62rem;
