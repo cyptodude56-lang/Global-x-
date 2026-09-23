@@ -10,11 +10,12 @@
 // directly against a real database that a customer can now hold multiple
 // physical cards, and that the 7th request is cleanly rejected.
 //
-// CVV numbers shown here are NOT real data — there's no cvv column
-// anywhere in this schema. They're generated client-side, deterministic
-// per card (so they don't change on every render), purely for visual
-// completeness on an already-fake sandbox card. Masked by default, same
-// as everything else sensitive-looking in this project.
+// CVV numbers are a real `cvv` column on `cards` (see cvv.sql — a manual
+// migration, run once in Supabase's SQL editor, same convention as every
+// other schema change in this project). Random 3-digit value, generated
+// here at issuance and backed by a DB default for any older card rows.
+// Still entirely fake, sandbox-only data — masked by default, same as
+// everything else sensitive-looking here.
 // ---------------------------------------------------------------------------
 
 let CURRENT_USER_ID = null;
@@ -90,7 +91,6 @@ function isNotificationVisible(createdAt) {
 }
 
 function hashCode(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return h; }
-function fakeCvv(cardId) { return String(100 + (Math.abs(hashCode(String(cardId))) % 900)); }
 function randomDigits(n) { let s = ""; for (let i = 0; i < n; i++) s += Math.floor(Math.random() * 10); return s; }
 
 const TICKER_PAIRS = [["USD", "GBP"], ["USD", "EUR"], ["GBP", "EUR"], ["GBP", "USD"], ["EUR", "USD"], ["EUR", "GBP"]];
@@ -152,6 +152,7 @@ async function loadData() {
       fullPan: detectFullPan(c),
       expiry: c.expiry,
       holder: c.card_holder_name,
+      cvv: c.cvv,
       network: c.card_network,
       isVirtual: !!c.is_virtual,
       status: c.status,
@@ -207,7 +208,7 @@ function cardItemHtml(c) {
   const hiddenDisplay = `•••• •••• •••• ${lastFour(c.maskedPan)}`;
   const shownDisplay = c.fullPan ? formatPan(c.fullPan) : c.maskedPan;
   const numberToShow = c.revealed && !pending ? shownDisplay : hiddenDisplay;
-  const cvv = c.revealed && !pending ? fakeCvv(c.id) : "•••";
+  const cvv = c.revealed && !pending ? (c.cvv || "•••") : "•••";
 
   return `
     <div class="card-item" data-card-id="${c.id}">
@@ -309,6 +310,7 @@ async function issueCard(cardType) {
       full_pan: fullPan,
       expiry,
       card_holder_name: `${ACCOUNT.firstName} ${ACCOUNT.lastName}`,
+      cvv: randomDigits(3),
       status: isVirtual ? "active" : "pending",
       is_virtual: isVirtual,
       environment: "sandbox",
@@ -332,6 +334,7 @@ async function issueCard(cardType) {
     fullPan: detectFullPan(data),
     expiry: data.expiry,
     holder: data.card_holder_name,
+    cvv: data.cvv,
     network: data.card_network,
     isVirtual: data.is_virtual,
     status: data.status,
