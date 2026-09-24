@@ -67,11 +67,11 @@ html { scroll-behavior: smooth; }
 .app-shell::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background-image: url("data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2732%27%20height=%2732%27%3E%3Cpath%20d=%27M-2%2034L34%20-2%27%20stroke=%27%232451B0%27%20stroke-opacity=%27.06%27%20stroke-width=%271%27%20fill=%27none%27/%3E%3C/svg%3E"); animation: m-drift 40s steps(32) infinite; }
 
 /* Sidebar */
-.sidebar { isolation: isolate; overflow: clip; }
+.sidebar { isolation: isolate; overflow-x: clip; }
 .sidebar::before {
   content: "";
   position: absolute;
-  inset: -64px;
+  inset: 0;
   z-index: -1;
   pointer-events: none;
   background-image: url("data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2732%27%20height=%2732%27%3E%3Cpath%20d=%27M-2%2034L34%20-2%27%20stroke=%27%238FA7DC%27%20stroke-opacity=%27.09%27%20stroke-width=%271%27%20fill=%27none%27/%3E%3C/svg%3E");

@@ -693,6 +693,25 @@
 }
 @keyframes kyc-slide { from { transform: translateX(-100%); } to { transform: translateX(320%); } }
 
+/* The rail's privacy note shares the .kyc-notice class with the red
+   "submission wasn't approved" banner below; keep the rail version on its
+   own dark styling (on phones it sits right under the brand). */
+.kyc-rail .kyc-notice {
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  color: #B7C0D1;
+}
+
+/* Touch + iOS: 16px fields avoid focus-zoom; full-height uses dvh. */
+.kyc-body input, .kyc-body select, .kyc-body textarea { font-size: 16px; }
+@supports (height: 100dvh) {
+  .kyc-shell, .kyc-main-inner { min-height: 100dvh; }
+}
+@media (max-width: 899px) {
+  .kyc-main-inner { min-height: 0; }
+}
+
 /* ---------- Responsive ---------- */
 
 @media (max-width: 899px) {
